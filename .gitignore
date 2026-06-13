@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+.claude/settings.local.json
+
+# MagPy: local scratchpad for bioamla API/CLI gap suggestions (not checked in)
+bioamla_notes.md
+/legacy
