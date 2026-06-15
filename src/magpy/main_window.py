@@ -219,9 +219,9 @@ class MainWindow(QMainWindow):
         self._home_screen = HomeScreen()
         self._screens = {
             ViewType.HOME: self._home_screen,
-            ViewType.DATASETS: DatasetsScreen(),
+            ViewType.DATASETS: DatasetsScreen(self._workspace),
             ViewType.TRAINING: TrainingScreen(self._workspace),
-            ViewType.EXPLORE: ExploreScreen(),
+            ViewType.EXPLORE: ExploreScreen(self._workspace),
             ViewType.BATCH: BatchScreen(self._workspace),
             ViewType.INATURALIST: CatalogScreen(INATURALIST_CONFIG, self._workspace),
             ViewType.EBIRD: CatalogScreen(EBIRD_CONFIG, self._workspace),

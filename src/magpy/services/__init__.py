@@ -39,6 +39,24 @@ from .batch import (
     BatchParam,
     run_batch_op,
 )
+from .cluster import (
+    CLUSTER_METHODS,
+    REDUCE_METHODS,
+    EmbeddingScatter,
+    cluster_embeddings_dir,
+    export_scatter_csv,
+)
+from .datasets import (
+    AUGMENT_PARAMS,
+    DatasetOutcome,
+    augment,
+    build_manifest,
+    dataset_stats,
+    extract_clips,
+    generate_license,
+    merge,
+    partition,
+)
 from .env_io import (
     KNOWN_ENV_VARS,
     EnvVarSpec,
@@ -140,6 +158,22 @@ __all__ = [
     "BATCH_OPS",
     "BATCH_OPS_BY_KEY",
     "run_batch_op",
+    # datasets (build training data from annotated sources)
+    "DatasetOutcome",
+    "AUGMENT_PARAMS",
+    "extract_clips",
+    "partition",
+    "merge",
+    "augment",
+    "dataset_stats",
+    "build_manifest",
+    "generate_license",
+    # cluster / explore (embedding space)
+    "EmbeddingScatter",
+    "CLUSTER_METHODS",
+    "REDUCE_METHODS",
+    "cluster_embeddings_dir",
+    "export_scatter_csv",
     # AST training / evaluation / prediction
     "TRAIN_PARAMS",
     "TrainOutcome",

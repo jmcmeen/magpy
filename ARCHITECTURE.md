@@ -255,13 +255,44 @@ possibly long-file loads. Do **not** thread per-view-window spectrogram/indices.
   before launch, shows an indeterminate bar, disables Train while running, and has
   **no Cancel button** (TensorBoard under `<training dir>/logs` is the real progress
   view). Heavy/model paths are construct-/wiring-verified, not run.
+- **Done — slice 13 (Datasets = build training data):** `services.datasets` is the
+  seam over bioamla's dataset-building fan-outs — `extract_labeled_dataset`,
+  `partition_dataset`, `merge_datasets`, `batch_augment`, `get_dataset_stats`,
+  `build_manifest_from_metadata`+`save_dataset_manifest`, `generate_license_for_
+  dataset` — each a per-op adapter normalising bioamla's `dict` returns to one
+  `DatasetOutcome`. The `DatasetsScreen` is **tabbed** (Extract clips / Partition /
+  Augment / Merge & inspect) rather than an op-picker, because the inputs are
+  heterogeneous (file-or-dir source + optional annotations; a dataset dir; multiple
+  dirs). No bioamla op here reports progress, so runs use an indeterminate bar with
+  no Cancel. Source audio stays immutable — every op writes a new dataset dir or
+  sidecar. The ops are **run for real** on synthetic annotated audio (+ unit tests);
+  `generate_license` only succeeds when the metadata carries attribution columns
+  (else bioamla raises, surfaced as a run error). Reuses `screens/_form.py` for the
+  augment param form. (This absorbs the dataset-building CLI ops; per-file *audio
+  editing* — trim/normalize/… as single-file → new-artifact — is reachable today via
+  the **Batch** screen's directory mode and is not duplicated here.)
 - **Shared:** `screens/_form.py` (`make_field`/`read_field`/`collect_params` over the
-  generic `BatchParam`) backs both the Batch and Training parameter forms.
-- **Next:** Datasets (audio editing → new artifacts) and Explore (`cluster` embedding
-  space) remain placeholders. The shell still doubles as the AUDIO view-model.
-  Frequency-box selections (2D), candidate overlays on the spectrogram, a
-  zoom/auto-scroll toolbar, batch CSV-metadata mode, and subprocess-isolated
-  training (killable, crash-isolated) are still open.
+  generic `BatchParam`) backs the Batch, Training, and Datasets parameter forms.
+- **Done — slice 14 (Explore = embedding space):** `services.cluster` wraps
+  `bioamla.cluster` (`load_embeddings_batch` → `cluster_embeddings` +
+  `reduce_dimensions` → `analyze_clusters_summary` + optional `detect_novelty`)
+  into one `cluster_embeddings_dir` call returning a render-ready
+  `EmbeddingScatter` (2-D coords, per-point cluster labels, novelty indices,
+  silhouette). The `ExploreScreen` loads a folder of `.npy` embeddings (from Batch
+  → Model embeddings), runs cluster+reduce off-thread through the `Worker`
+  (indeterminate; no progress hook), and draws a **pyqtgraph scatter coloured by
+  cluster** (noise grey, novel points red-ringed) plus CSV export. Seam gotcha
+  handled: `cluster_embeddings(...).labels` returns a `list`, so it's
+  `np.asarray`-coerced before `analyze_clusters_summary` (which does `labels >= 0`).
+  Run for real on synthetic embeddings (+ unit tests); PCA/UMAP/t-SNE all work.
+- **All nav views are now real** except **Hugging Face** (intentionally deferred —
+  the only remaining `PlaceholderScreen`).
+- **Next:** the shell still doubles as the AUDIO view-model — extract a dedicated
+  one as it grows. Open polish: frequency-box selections (2D), candidate overlays on
+  the spectrogram, a zoom/auto-scroll toolbar, batch CSV-metadata mode, per-file
+  audio editing on the Datasets screen (vs. Batch), point→file interaction on the
+  Explore scatter (click a point to open its audio), and subprocess-isolated
+  training (killable, crash-isolated).
 - **Reference:** the previous generation is preserved under `legacy/magpy/`
   (built on the removed `bioamla.controllers`/`core.*` API; does not import).
   Mine it for UI ideas only.
