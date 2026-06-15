@@ -1,12 +1,23 @@
 """
 SpectrogramView -- a pyqtgraph view that renders a :class:`SpectrogramImage`,
-overlays the document's annotations, and hosts a transient selection region.
+overlays the document's annotations, and hosts a transient selection.
 
 The dB image arrives via :meth:`set_image` (the shell computes it). Annotation
 overlays bind directly to the :class:`AnnotationSet` model (like the table), so
-the view stays in sync without shell glue. The "selection" is a single
-draggable time region the user positions and then promotes to an annotation;
-it is transient UI state, distinct from committed annotations.
+the view stays in sync without shell glue.
+
+Two selection shapes, both transient (distinct from committed annotations):
+
+* **Time region** (:meth:`start_selection`) -- a full-band span on the time axis,
+  for "this stretch of the recording" selections.
+* **Time-frequency box** (:meth:`start_box_selection`) -- a draggable/resizable 2-D
+  ``RectROI`` capturing a time *and* frequency extent, for "this call in this
+  band" selections.
+
+Either way :meth:`selection_bounds` returns ``(start, end, low_freq, high_freq)``
+(``low_freq``/``high_freq`` are ``None`` for a time region). Committed annotations
+that carry frequency bounds render as filled boxes; those without (time-only
+imports, promoted detector candidates) render as full-height regions.
 
 No bioamla imports -- only the MagPy model and the plain ``Annotation`` DTO.
 """
@@ -17,14 +28,17 @@ from typing import Optional
 
 import pyqtgraph as pg
 from PyQt6.QtCore import QRectF
-from PyQt6.QtWidgets import QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QGraphicsRectItem, QLabel, QVBoxLayout, QWidget
 
 from magpy.models import AnnotationSet
 from magpy.services import Annotation, SpectrogramImage
 
 _ANN_BRUSH = pg.mkBrush(255, 235, 59, 40)
 _ANN_SELECTED_BRUSH = pg.mkBrush(255, 140, 0, 90)
+_BOX_PEN = pg.mkPen(255, 235, 59, width=1)
+_BOX_SELECTED_PEN = pg.mkPen(255, 140, 0, width=2)
 _SEL_BRUSH = pg.mkBrush(0, 200, 255, 50)
+_SEL_PEN = pg.mkPen(0, 200, 255, width=2)
 
 
 def _default_colormap() -> pg.ColorMap:
@@ -42,9 +56,10 @@ class SpectrogramView(QWidget):
         self._model = annotations
         self._f_max = 0.0
         self._duration = 0.0
-        self._regions: dict[str, pg.LinearRegionItem] = {}
+        self._regions: dict[str, pg.LinearRegionItem] = {}  # time-only annotations
+        self._boxes: dict[str, QGraphicsRectItem] = {}  # freq-bounded annotations
         self._labels: dict[str, pg.TextItem] = {}
-        self._selection: Optional[pg.LinearRegionItem] = None
+        self._selection: Optional[object] = None  # LinearRegionItem | RectROI
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -58,6 +73,11 @@ class SpectrogramView(QWidget):
         self._playhead.setVisible(False)
         self._plot.addItem(self._playhead)
         layout.addWidget(self._plot)
+
+        self._cursor_label = QLabel("")
+        self._cursor_label.setStyleSheet("color: #858585; padding: 0 4px;")
+        layout.addWidget(self._cursor_label)
+        self._plot.scene().sigMouseMoved.connect(self._on_mouse_moved)
 
         self._model.added.connect(self._sync_annotations)
         self._model.removed.connect(self._sync_annotations)
@@ -90,45 +110,88 @@ class SpectrogramView(QWidget):
 
     # --- transient selection ---------------------------------------------
     def start_selection(self) -> None:
-        """Create a draggable selection region centred in the current view."""
+        """Create a draggable full-band time selection centred in the view."""
         self.clear_selection()
         x0, x1 = self._plot.viewRange()[0]
         span = (x1 - x0) * 0.1
         mid = (x0 + x1) / 2
-        self._selection = pg.LinearRegionItem(
-            values=(mid - span, mid + span), brush=_SEL_BRUSH
-        )
+        self._selection = pg.LinearRegionItem(values=(mid - span, mid + span), brush=_SEL_BRUSH)
         self._plot.addItem(self._selection)
 
-    def selection_range(self) -> Optional[tuple[float, float]]:
-        """The current selection's (start, end) in seconds, or ``None``."""
+    def start_box_selection(self) -> None:
+        """Create a draggable/resizable 2-D time-frequency selection box."""
+        self.clear_selection()
+        (x0, x1), (y0, y1) = self._plot.viewRange()
+        x_span = (x1 - x0) * 0.2
+        y0c, y1c = y0 + (y1 - y0) * 0.3, y0 + (y1 - y0) * 0.7
+        mid = (x0 + x1) / 2
+        roi = pg.RectROI(
+            [mid - x_span / 2, y0c], [x_span, y1c - y0c],
+            pen=_SEL_PEN, movable=True, resizable=True,
+        )
+        self._selection = roi
+        self._plot.addItem(roi)
+
+    def selection_bounds(self) -> Optional[tuple[float, float, Optional[float], Optional[float]]]:
+        """Current selection as ``(start, end, low_freq, high_freq)`` or ``None``.
+
+        ``low_freq``/``high_freq`` are ``None`` for a time region. Bounds are
+        normalised (start ≤ end, low ≤ high) so a box dragged up/left can't make
+        an inverted annotation, and frequency is clamped to ≥ 0.
+        """
         if self._selection is None:
             return None
-        lo, hi = self._selection.getRegion()
-        return (float(lo), float(hi))
+        if isinstance(self._selection, pg.LinearRegionItem):
+            lo, hi = sorted(self._selection.getRegion())
+            return (float(lo), float(hi), None, None)
+        pos, size = self._selection.pos(), self._selection.size()
+        start, end = sorted((pos.x(), pos.x() + size.x()))
+        low, high = sorted((pos.y(), pos.y() + size.y()))
+        return (float(start), float(end), max(0.0, float(low)), max(0.0, float(high)))
 
     def clear_selection(self) -> None:
         if self._selection is not None:
             self._plot.removeItem(self._selection)
             self._selection = None
 
+    # --- cursor readout ---------------------------------------------------
+    def _on_mouse_moved(self, scene_pos: object) -> None:
+        if self._image.image is None:  # nothing loaded
+            self._cursor_label.setText("")
+            return
+        vb = self._plot.getPlotItem().vb
+        if not self._plot.sceneBoundingRect().contains(scene_pos):
+            self._cursor_label.setText("")
+            return
+        pt = vb.mapSceneToView(scene_pos)
+        self._cursor_label.setText(f"t = {pt.x():.3f} s     f = {pt.y():.0f} Hz")
+
     # --- annotation overlays ---------------------------------------------
     def _sync_annotations(self, *_: object) -> None:
-        for region in self._regions.values():
-            self._plot.removeItem(region)
-        for label in self._labels.values():
-            self._plot.removeItem(label)
+        for item in (*self._regions.values(), *self._boxes.values(), *self._labels.values()):
+            self._plot.removeItem(item)
         self._regions.clear()
+        self._boxes.clear()
         self._labels.clear()
         for ann in self._model.items():
-            region = pg.LinearRegionItem(
-                values=(ann.start_time, ann.end_time), movable=False, brush=_ANN_BRUSH
-            )
-            self._plot.addItem(region)
-            self._regions[ann.id] = region
+            if ann.low_freq is not None and ann.high_freq is not None:
+                low, high = sorted((ann.low_freq, ann.high_freq))
+                box = QGraphicsRectItem(QRectF(ann.start_time, low, ann.duration, high - low))
+                box.setPen(_BOX_PEN)
+                box.setBrush(_ANN_BRUSH)
+                self._plot.addItem(box)  # routed to the ViewBox -> data coords
+                self._boxes[ann.id] = box
+                label_y = high
+            else:
+                region = pg.LinearRegionItem(
+                    values=(ann.start_time, ann.end_time), movable=False, brush=_ANN_BRUSH
+                )
+                self._plot.addItem(region)
+                self._regions[ann.id] = region
+                label_y = self._f_max
             if ann.label:
                 text = pg.TextItem(ann.label, anchor=(0, 1), color="w")
-                text.setPos(ann.start_time, self._f_max)
+                text.setPos(ann.start_time, label_y)
                 self._plot.addItem(text)
                 self._labels[ann.id] = text
         self._restyle(self._model.selected)
@@ -138,3 +201,7 @@ class SpectrogramView(QWidget):
         for ann_id, region in self._regions.items():
             region.setBrush(_ANN_SELECTED_BRUSH if ann_id == sel_id else _ANN_BRUSH)
             region.update()
+        for ann_id, box in self._boxes.items():
+            chosen = ann_id == sel_id
+            box.setBrush(_ANN_SELECTED_BRUSH if chosen else _ANN_BRUSH)
+            box.setPen(_BOX_SELECTED_PEN if chosen else _BOX_PEN)

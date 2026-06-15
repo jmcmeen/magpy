@@ -208,6 +208,7 @@ class MainWindow(QMainWindow):
         action("Import…", self._import_artifact_dialog)
         toolbar.addSeparator()
         action("New Selection", self._spectrogram.start_selection, "S")
+        action("New Box", self._spectrogram.start_box_selection, "B")
         action("Add", self._add_annotation, "Return")
         action("Delete", self._delete_selected, "Delete")
         toolbar.addSeparator()
@@ -583,12 +584,14 @@ class MainWindow(QMainWindow):
         self._workspace.save_annotations_for(self._current_audio_path, self._annotations.items())
 
     def _add_annotation(self) -> None:
-        rng = self._spectrogram.selection_range()
-        if rng is None:
-            self.statusBar().showMessage("No selection — press S to start one")
+        bounds = self._spectrogram.selection_bounds()
+        if bounds is None:
+            self.statusBar().showMessage("No selection — press S (time) or B (box) to start one")
             return
-        start, end = sorted(rng)
-        self._annotations.add(Annotation(start_time=start, end_time=end))
+        start, end, low, high = bounds
+        self._annotations.add(
+            Annotation(start_time=start, end_time=end, low_freq=low, high_freq=high)
+        )
         self._spectrogram.clear_selection()
 
     def _delete_selected(self) -> None:

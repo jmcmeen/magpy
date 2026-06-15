@@ -160,8 +160,8 @@ possibly long-file loads. Do **not** thread per-view-window spectrogram/indices.
   label, select, delete) and annotation overlays + a promotable selection region
   on `SpectrogramView`; import/export wired in the shell. Verified headless
   (create/edit/select-sync/Raven+CSV roundtrip/delete/clear-on-reopen). Known
-  gaps: selection is time-only (no frequency box yet); Raven export drops
-  confidence/notes (format limitation — use CSV for fidelity).
+  gap: Raven export drops confidence/notes (format limitation — use CSV for
+  fidelity). *(Time-frequency box selection landed later — see slice 15.)*
 - **Done — slice 4 (navigation shell):** the legacy layout ported back — a VS
   Code-style `NavigationBar` switching a `QStackedWidget` of `BaseScreen` views
   (Home dashboard + Datasets/Training/iNaturalist/Batch placeholders), the dark
@@ -287,12 +287,25 @@ possibly long-file loads. Do **not** thread per-view-window spectrogram/indices.
   Run for real on synthetic embeddings (+ unit tests); PCA/UMAP/t-SNE all work.
 - **All nav views are now real** except **Hugging Face** (intentionally deferred —
   the only remaining `PlaceholderScreen`).
+- **Done — slice 15 (time-frequency box selection):** `SpectrogramView` gained a
+  2-D `RectROI` selection (`start_box_selection`, key **B**) alongside the existing
+  full-band time region (key **S**); `selection_bounds()` returns
+  `(start, end, low_freq, high_freq)` (freqs `None` for a time region), normalised
+  (start ≤ end, low ≤ high) and freq-clamped ≥ 0 so a backwards-dragged box can't
+  invert. Committed annotations carrying frequency bounds now render as filled
+  **boxes** in ViewBox data coords (verified they track pan/zoom), while time-only
+  ones (imports, promoted detector candidates) stay full-height regions — both
+  styled on selection. Added a live cursor **t/f readout**. The `Annotation` DTO
+  already carried `low_freq/high_freq`, so this was view-layer only; freq bounds
+  round-trip through CSV + Raven (verified). Interactive resize-to-edit a committed
+  box is deliberately deferred (edit freq via the Properties panel) to avoid the
+  `sigRegionChanged`→model feedback loop. Qt tests in `tests/test_spectrogram_view.py`.
 - **Next:** the shell still doubles as the AUDIO view-model — extract a dedicated
-  one as it grows. Open polish: frequency-box selections (2D), candidate overlays on
-  the spectrogram, a zoom/auto-scroll toolbar, batch CSV-metadata mode, per-file
-  audio editing on the Datasets screen (vs. Batch), point→file interaction on the
-  Explore scatter (click a point to open its audio), and subprocess-isolated
-  training (killable, crash-isolated).
+  one as it grows. Open polish: candidate overlays on the spectrogram, a
+  zoom/auto-scroll toolbar, batch CSV-metadata mode, per-file audio editing on the
+  Datasets screen (vs. Batch), point→file interaction on the Explore scatter (click
+  a point to open its audio), interactive drag-to-edit of committed boxes, and
+  subprocess-isolated training (killable, crash-isolated).
 - **Reference:** the previous generation is preserved under `legacy/magpy/`
   (built on the removed `bioamla.controllers`/`core.*` API; does not import).
   Mine it for UI ideas only.
