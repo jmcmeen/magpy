@@ -297,15 +297,27 @@ possibly long-file loads. Do **not** thread per-view-window spectrogram/indices.
   ones (imports, promoted detector candidates) stay full-height regions — both
   styled on selection. Added a live cursor **t/f readout**. The `Annotation` DTO
   already carried `low_freq/high_freq`, so this was view-layer only; freq bounds
-  round-trip through CSV + Raven (verified). Interactive resize-to-edit a committed
-  box is deliberately deferred (edit freq via the Properties panel) to avoid the
-  `sigRegionChanged`→model feedback loop. Qt tests in `tests/test_spectrogram_view.py`.
+  round-trip through CSV + Raven (verified). Qt tests in `tests/test_spectrogram_view.py`.
+- **Done — slice 16 (spectrogram controls + interactive boxes):** a controls row on
+  `SpectrogramView` adds a **colormap** picker, a **contrast** slider (raises the dB
+  display floor via `ImageItem.setLevels`), **auto-scroll** (the view follows the
+  playhead near the right edge during playback), and **zoom** in/out/fit (time axis)
+  — all view-local. Annotations became **click-to-select** (hit-test the box/region
+  under the cursor; empty click deselects), and the *selected* freq-box promotes to
+  an editable/resizable `RectROI` (unselected ones stay filled static rects — no
+  handle clutter, the verified look preserved); dragging it writes the new bounds
+  back. The edit↔rebuild feedback loop is contained by symmetric guards: an
+  `_editing` flag suppresses the rebuild our own `model.update` triggers (so the held
+  ROI isn't torn down), and a `_syncing` flag guards the build path; the swap of
+  representation falls out of routing `selectionChanged → _sync_annotations`.
+  `sigRegionChangeFinished` (not `…Changed`) avoids per-pixel spam. Verified headless
+  (ROI lands in data coords, demote-on-reselect, drag-writes-back, click-select,
+  deselect) + Qt tests.
 - **Next:** the shell still doubles as the AUDIO view-model — extract a dedicated
-  one as it grows. Open polish: candidate overlays on the spectrogram, a
-  zoom/auto-scroll toolbar, batch CSV-metadata mode, per-file audio editing on the
-  Datasets screen (vs. Batch), point→file interaction on the Explore scatter (click
-  a point to open its audio), interactive drag-to-edit of committed boxes, and
-  subprocess-isolated training (killable, crash-isolated).
+  one as it grows. Open polish: candidate overlays on the spectrogram, batch
+  CSV-metadata mode, per-file audio editing on the Datasets screen (vs. Batch),
+  point→file interaction on the Explore scatter (click a point to open its audio),
+  and subprocess-isolated training (killable, crash-isolated).
 - **Reference:** the previous generation is preserved under `legacy/magpy/`
   (built on the removed `bioamla.controllers`/`core.*` API; does not import).
   Mine it for UI ideas only.

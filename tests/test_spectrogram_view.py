@@ -32,13 +32,35 @@ def _view(qapp):
     return model, view
 
 
-def test_freq_annotation_renders_as_box_in_data_coords(qapp):
+def test_selected_freq_box_is_editable_roi_in_data_coords(qapp):
+    model, view = _view(qapp)
+    ann = Annotation(start_time=2.0, end_time=4.0, low_freq=1000.0, high_freq=3000.0)
+    model.add(ann)  # add() auto-selects -> editable ROI
+    assert view._edit_id == ann.id and ann.id not in view._boxes
+    pos, size = view._edit_roi.pos(), view._edit_roi.size()
+    assert (pos.x(), pos.y(), size.x(), size.y()) == (2.0, 1000.0, 2.0, 2000.0)
+
+
+def test_unselected_freq_box_is_static_rect(qapp):
+    model, view = _view(qapp)
+    first = Annotation(start_time=2.0, end_time=4.0, low_freq=1000.0, high_freq=3000.0)
+    model.add(first)
+    model.add(Annotation(start_time=6.0, end_time=7.0, low_freq=500.0, high_freq=1500.0))
+    # the second is now selected (ROI); the first demotes to a static data-coord box
+    assert first.id in view._boxes
+    r = view._boxes[first.id].rect()
+    assert (r.x(), r.y(), r.width(), r.height()) == (2.0, 1000.0, 2.0, 2000.0)
+
+
+def test_drag_edit_writes_bounds_back_without_teardown(qapp):
     model, view = _view(qapp)
     ann = Annotation(start_time=2.0, end_time=4.0, low_freq=1000.0, high_freq=3000.0)
     model.add(ann)
-    assert ann.id in view._boxes
-    r = view._boxes[ann.id].rect()
-    assert (r.x(), r.y(), r.width(), r.height()) == (2.0, 1000.0, 2.0, 2000.0)
+    view._edit_roi.setPos([2.5, 1500.0])
+    view._edit_roi.setSize([1.0, 1000.0])
+    view._on_box_edited()
+    assert (ann.start_time, ann.end_time, ann.low_freq, ann.high_freq) == (2.5, 3.5, 1500.0, 2500.0)
+    assert view._edit_id == ann.id  # ROI still held, not torn down
 
 
 def test_time_only_annotation_renders_as_region(qapp):
