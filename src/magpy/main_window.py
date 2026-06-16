@@ -8,7 +8,7 @@ ported (mostly placeholder) views; the AUDIO view hosts the rebuilt
 spectrogram/transport/annotation work and is wired through the services seam.
 
 MagPy is **workspace-always**: the shell always has a :class:`Workspace` open --
-the last-used bundle, or an auto-created "Scratch" workspace -- so there is no
+the last-used bundle, or an auto-created "Untitled" workspace -- so there is no
 "nothing open" state. Audio is *linked* into a workspace by reference (never
 copied) and the annotations the user makes are persisted into the bundle. The
 File menu drives managing workspaces; "Import" is the explicit copy-in escape
@@ -50,7 +50,7 @@ from magpy.screens import (
     DatasetsScreen,
     ExploreScreen,
     HomeScreen,
-    PlaceholderScreen,
+    HuggingFaceScreen,
     SettingsScreen,
     TrainingScreen,
 )
@@ -228,13 +228,7 @@ class MainWindow(QMainWindow):
             ViewType.EBIRD: CatalogScreen(EBIRD_CONFIG, self._workspace),
             ViewType.MACAULAY: CatalogScreen(MACAULAY_CONFIG, self._workspace),
             ViewType.XENOCANTO: CatalogScreen(XENO_CANTO_CONFIG, self._workspace),
-            ViewType.HUGGINGFACE: PlaceholderScreen(
-                "Hugging Face", "🤗",
-                "Browse Hugging Face datasets and models.\n\n"
-                "- Pull datasets and models\n"
-                "- Push your own\n"
-                "- Manage repositories",
-            ),
+            ViewType.HUGGINGFACE: HuggingFaceScreen(self._workspace),
             ViewType.SETTINGS: SettingsScreen(self._env_path),
         }
         self._view_widgets = {ViewType.AUDIO: self._audio_view}
@@ -334,10 +328,7 @@ class MainWindow(QMainWindow):
 
         # Home dashboard cards navigate to the matching views / manage workspaces.
         home = self._home_screen
-        home.audio_analysis_clicked.connect(lambda: self._navigate_to(ViewType.AUDIO))
-        home.dataset_editor_clicked.connect(lambda: self._navigate_to(ViewType.DATASETS))
-        home.ai_trainer_clicked.connect(lambda: self._navigate_to(ViewType.TRAINING))
-        home.inaturalist_clicked.connect(lambda: self._navigate_to(ViewType.INATURALIST))
+        home.navigate_requested.connect(self._navigate_to)
         home.new_workspace_clicked.connect(self._new_workspace_dialog)
         home.open_workspace_clicked.connect(self._open_workspace_dialog)
         if hasattr(home, "recent_workspace_clicked"):
@@ -370,7 +361,7 @@ class MainWindow(QMainWindow):
 
     # --- workspace lifecycle ---------------------------------------------
     def _bootstrap_workspace(self) -> None:
-        """Open the last workspace, else create/open the Scratch workspace."""
+        """Open the last workspace, else create/open the Untitled workspace."""
         for path in self._recent_workspaces():
             if is_bundle(path):
                 self._workspace.open(path)
@@ -379,11 +370,11 @@ class MainWindow(QMainWindow):
         if is_bundle(scratch):
             self._workspace.open(scratch)
         else:
-            self._workspace.create(scratch, "Scratch")
+            self._workspace.create(scratch, "Untitled")
 
     def _scratch_dir(self) -> Path:
         base = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)
-        return Path(base or Path.home() / ".magpy") / f"Scratch{BUNDLE_SUFFIX}"
+        return Path(base or Path.home() / ".magpy") / f"Untitled{BUNDLE_SUFFIX}"
 
     def _new_workspace_dialog(self) -> None:
         path, _ = QFileDialog.getSaveFileName(

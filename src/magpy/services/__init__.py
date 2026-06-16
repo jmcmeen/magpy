@@ -31,6 +31,15 @@ from .catalogs import (
     search_macaulay,
     search_xeno_canto,
 )
+from .huggingface import (
+    HFCachedRepo,
+    HFPullResult,
+    HFPurgeResult,
+    human_bytes,
+    pull_dataset,
+    purge_hf_cache,
+    scan_hf_cache,
+)
 from .batch import (
     BATCH_OPS,
     BATCH_OPS_BY_KEY,
@@ -151,6 +160,14 @@ __all__ = [
     "search_inaturalist",
     "search_ebird_region",
     "download_records",
+    # hugging face (pull datasets, manage hub cache)
+    "HFPullResult",
+    "HFCachedRepo",
+    "HFPurgeResult",
+    "human_bytes",
+    "pull_dataset",
+    "scan_hf_cache",
+    "purge_hf_cache",
     # batch (fan-out of single-file ops over a directory)
     "BatchParam",
     "BatchOpSpec",

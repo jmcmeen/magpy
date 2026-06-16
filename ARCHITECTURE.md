@@ -285,8 +285,9 @@ possibly long-file loads. Do **not** thread per-view-window spectrogram/indices.
   handled: `cluster_embeddings(...).labels` returns a `list`, so it's
   `np.asarray`-coerced before `analyze_clusters_summary` (which does `labels >= 0`).
   Run for real on synthetic embeddings (+ unit tests); PCA/UMAP/t-SNE all work.
-- **All nav views are now real** except **Hugging Face** (intentionally deferred —
-  the only remaining `PlaceholderScreen`).
+- **All nav views are now real.** Hugging Face was the last placeholder; with
+  slice 17 every nav button lands on a working screen. `PlaceholderScreen` is no
+  longer wired into the shell (kept around for future stubs).
 - **Done — slice 15 (time-frequency box selection):** `SpectrogramView` gained a
   2-D `RectROI` selection (`start_box_selection`, key **B**) alongside the existing
   full-band time region (key **S**); `selection_bounds()` returns
@@ -313,6 +314,19 @@ possibly long-file loads. Do **not** thread per-view-window spectrogram/indices.
   `sigRegionChangeFinished` (not `…Changed`) avoids per-pixel spam. Verified headless
   (ROI lands in data coords, demote-on-reselect, drag-writes-back, click-select,
   deselect) + Qt tests.
+- **Done — slice 17 (Hugging Face + shell polish):** `services.huggingface` is the
+  seam over `bioamla.catalogs.huggingface` — `pull_dataset` (repo → workspace,
+  audio collected for linking), `scan_hf_cache`, `purge_hf_cache` — collapsing the
+  bioamla `PullResult`/`CachedRepo`/`PurgeResult` into MagPy DTOs (`HFPullResult`/
+  `HFCachedRepo`/`HFPurgeResult`). The bespoke `HuggingFaceScreen` (pull-by-id, not
+  search, so not a `CatalogConfig`) pulls into the workspace and inspects/purges the
+  hub cache, all threaded. Push (`push_dataset`/`push_model`) deferred. Mapping
+  unit-tested against faked bioamla shapes (`tests/test_huggingface.py`). Alongside:
+  the **Home** dashboard now surfaces *every* nav view as a card via one
+  `navigate_requested(ViewType)` signal (grid-wrapped), the default workspace is
+  **"Untitled"** (was "Scratch"), and `app.main` shows a code-drawn **splash** before
+  the heavy `MainWindow` import (deferred so the splash paints first). First
+  shell-construction test (`tests/test_main_window.py`, Qt test-mode isolated).
 - **Next:** the shell still doubles as the AUDIO view-model — extract a dedicated
   one as it grows. Open polish: candidate overlays on the spectrogram, batch
   CSV-metadata mode, per-file audio editing on the Datasets screen (vs. Batch),

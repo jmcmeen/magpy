@@ -11,6 +11,7 @@ from .datasets_screen import DatasetsScreen
 from .training_screen import TrainingScreen
 from .batch_screen import BatchScreen
 from .explore_screen import ExploreScreen
+from .huggingface_screen import HuggingFaceScreen
 from .placeholder import PlaceholderScreen, coming_soon_card
 from .settings_screen import SettingsScreen
 from .catalog_screen import CatalogConfig, CatalogField, CatalogScreen
@@ -29,6 +30,7 @@ __all__ = [
     "TrainingScreen",
     "BatchScreen",
     "ExploreScreen",
+    "HuggingFaceScreen",
     "PlaceholderScreen",
     "coming_soon_card",
     "SettingsScreen",
