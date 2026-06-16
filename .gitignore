@@ -221,3 +221,4 @@ __marimo__/
 # MagPy: local scratchpad for bioamla API/CLI gap suggestions (not checked in)
 bioamla_notes.md
 /legacy
+/.vscode
