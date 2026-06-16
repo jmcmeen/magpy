@@ -3,7 +3,7 @@ Catalog configurations -- the per-source :class:`CatalogConfig` instances.
 
 Each entry wires a search form (field names match the corresponding
 :mod:`magpy.services.catalogs` search-function keyword arguments) to its search
-function. The generic :class:`~magpy.screens.catalog_screen.CatalogScreen`
+function. The generic :class:`~magpy.screens.catalog.CatalogScreen`
 renders them. Keep all bioamla/network specifics in the service; these are pure
 descriptors.
 
@@ -24,7 +24,7 @@ from magpy.services import (
     search_xeno_canto,
 )
 
-from .catalog_screen import CatalogConfig, CatalogField
+from .catalog import CatalogConfig, CatalogField
 
 XENO_CANTO_CONFIG = CatalogConfig(
     source=SOURCE_XENO_CANTO,

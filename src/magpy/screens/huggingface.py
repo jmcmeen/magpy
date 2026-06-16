@@ -3,7 +3,7 @@ HuggingFaceScreen -- pull datasets from the Hub and manage the local cache.
 
 Unlike the search-based catalog views, Hugging Face is *pull-by-id*: you name a
 dataset repo and download it. So this is a bespoke screen rather than a
-:class:`~magpy.screens.catalog_screen.CatalogConfig`. It offers the "basic"
+:class:`~magpy.screens.catalog.CatalogConfig`. It offers the "basic"
 features:
 
 * **Pull a dataset** by ``repo_id`` into the open workspace (threaded; audio that
@@ -59,6 +59,8 @@ class HuggingFaceScreen(BaseScreen):
         self._pull_worker: Optional[Worker] = None
         self._cache_worker: Optional[Worker] = None
         self._purge_worker: Optional[Worker] = None
+        self._pull_succeeded = False
+        self._scan_quiet = False
         super().__init__(parent)
 
     @property
@@ -120,7 +122,7 @@ class HuggingFaceScreen(BaseScreen):
 
         cache_row = QHBoxLayout()
         self._scan_button = QPushButton("Scan cache")
-        self._scan_button.clicked.connect(self._scan)
+        self._scan_button.clicked.connect(lambda: self._scan())
         cache_row.addWidget(self._scan_button)
         self._purge_button = QPushButton("Purge cache")
         self._purge_button.clicked.connect(self._purge)
@@ -176,16 +178,25 @@ class HuggingFaceScreen(BaseScreen):
             f"Pulled {result.repo_id}: {result.num_files} file(s)"
             f", linked {len(result.audio_files)} audio{labels}."
         )
+        self._pull_succeeded = True
 
     def _on_pull_finished(self) -> None:
         self._pull_worker = None
-        self._set_busy(False)
+        # A successful pull populates the hub cache, so refresh the table to
+        # reflect it. Scan quietly to preserve the "Pulled …" status message.
+        if self._pull_succeeded:
+            self._pull_succeeded = False
+            self._scan(quiet=True)
+        else:
+            self._set_busy(False)
 
     # --- cache ------------------------------------------------------------
-    def _scan(self) -> None:
+    def _scan(self, quiet: bool = False) -> None:
         if self._cache_worker is not None:
             return
-        self._set_busy(True, "Scanning cache…")
+        self._scan_quiet = quiet
+        # Quiet scans (auto-refresh after a pull) keep the existing status text.
+        self._set_busy(True, "" if quiet else "Scanning cache…")
         worker = Worker(scan_hf_cache)
         self._cache_worker = worker
         worker.signals.result.connect(self._on_cache)
@@ -205,7 +216,8 @@ class HuggingFaceScreen(BaseScreen):
                     item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 self._table.setItem(row, col, item)
         self._table.resizeColumnsToContents()
-        self._status.setText(f"{len(repos)} cached repo(s), {human_bytes(total)} total.")
+        if not self._scan_quiet:
+            self._status.setText(f"{len(repos)} cached repo(s), {human_bytes(total)} total.")
 
     def _on_cache_finished(self) -> None:
         self._cache_worker = None

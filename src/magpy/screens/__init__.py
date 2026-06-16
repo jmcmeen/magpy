@@ -1,20 +1,22 @@
 """MagPy screens -- the multi-view workspace, ported from the legacy layout.
 
-Each screen is a self-contained pure-Qt :class:`BaseScreen`. The honed
-navigation/layout was brought over largely verbatim; most views are still
-placeholders pending the rebuild.
+Each screen is a self-contained pure-Qt view. Most are :class:`BaseScreen`
+subclasses; :class:`AudioScreen` is a ``QMainWindow`` so it can host its own
+docks. The honed navigation/layout was brought over largely verbatim; several
+views are still placeholders pending the rebuild.
 """
 
 from .base import BaseScreen
-from .home_screen import HomeScreen
-from .datasets_screen import DatasetsScreen
-from .training_screen import TrainingScreen
-from .batch_screen import BatchScreen
-from .explore_screen import ExploreScreen
-from .huggingface_screen import HuggingFaceScreen
+from .audio import AudioScreen
+from .home import HomeScreen
+from .datasets import DatasetsScreen
+from .training import TrainingScreen
+from .batch import BatchScreen
+from .explore import ExploreScreen
+from .huggingface import HuggingFaceScreen
 from .placeholder import PlaceholderScreen, coming_soon_card
-from .settings_screen import SettingsScreen
-from .catalog_screen import CatalogConfig, CatalogField, CatalogScreen
+from .settings import SettingsScreen
+from .catalog import CatalogConfig, CatalogField, CatalogScreen
 from .catalog_configs import (
     CATALOG_CONFIGS,
     EBIRD_CONFIG,
@@ -25,6 +27,7 @@ from .catalog_configs import (
 
 __all__ = [
     "BaseScreen",
+    "AudioScreen",
     "HomeScreen",
     "DatasetsScreen",
     "TrainingScreen",
