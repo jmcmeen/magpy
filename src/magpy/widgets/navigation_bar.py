@@ -22,6 +22,7 @@ class ViewType(Enum):
     """Available main views in the application."""
     HOME = auto()
     AUDIO = auto()
+    INDICES = auto()
     DATASETS = auto()
     TRAINING = auto()
     EXPLORE = auto()
@@ -99,7 +100,8 @@ class NavigationBar(QWidget):
         # Top group: workspace tools then catalog sources.
         top_views = [
             (ViewType.HOME, "🏠", "Home"),
-            (ViewType.AUDIO, "🎵", "Audio Analysis"),
+            (ViewType.AUDIO, "🎵", "Audio Annotation"),
+            (ViewType.INDICES, "📊", "Acoustic Indices"),
             (ViewType.DATASETS, "📁", "Datasets"),
             (ViewType.TRAINING, "🧠", "Model Training"),
             (ViewType.EXPLORE, "🔭", "Explore (clusters & novelty)"),

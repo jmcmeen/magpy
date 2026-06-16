@@ -4,8 +4,10 @@ MainWindow -- the application shell.
 Reproduces the legacy navigation layout: a VS Code-style activity bar on the
 left switching a ``QStackedWidget`` of full-window screens, a dark theme, and an
 always-visible Workspace dock. The screens are self-contained views; the audio
-view-model/spectrogram/annotation work lives in :class:`AudioScreen` (its own
-``QMainWindow`` page with its own docks), reached through the services seam.
+spectrogram/annotation work lives in :class:`AudioAnnotationScreen` and the
+acoustic-indices analysis in :class:`IndicesScreen` (each its own ``QMainWindow``
+page with its own docks, sharing the :class:`BaseAudioScreen` core), reached
+through the services seam.
 
 MagPy is **workspace-always**: the shell always has a :class:`Workspace` open --
 the last-used bundle, or an auto-created "Untitled" workspace -- so there is no
@@ -40,7 +42,7 @@ from magpy.screens import (
     INATURALIST_CONFIG,
     MACAULAY_CONFIG,
     XENO_CANTO_CONFIG,
-    AudioScreen,
+    AudioAnnotationScreen,
     BaseScreen,
     BatchScreen,
     CatalogScreen,
@@ -48,6 +50,7 @@ from magpy.screens import (
     ExploreScreen,
     HomeScreen,
     HuggingFaceScreen,
+    IndicesScreen,
     SettingsScreen,
     TrainingScreen,
 )
@@ -64,7 +67,8 @@ _MAX_RECENT = 10
 
 _VIEW_NAMES = {
     ViewType.HOME: "Home",
-    ViewType.AUDIO: "Audio",
+    ViewType.AUDIO: "Audio Annotation",
+    ViewType.INDICES: "Acoustic Indices",
     ViewType.DATASETS: "Datasets",
     ViewType.TRAINING: "Training",
     ViewType.EXPLORE: "Explore",
@@ -135,7 +139,9 @@ class MainWindow(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self._workspace_dock)
 
     def _create_views(self) -> None:
-        self._audio_screen = AudioScreen(self._workspace)
+        # Two independent audio screens (own playback each); annotation is primary.
+        self._annotation_screen = AudioAnnotationScreen(self._workspace)
+        self._indices_screen = IndicesScreen(self._workspace)
         self._home_screen = HomeScreen()
         self._screens = {
             ViewType.HOME: self._home_screen,
@@ -150,8 +156,12 @@ class MainWindow(QMainWindow):
             ViewType.HUGGINGFACE: HuggingFaceScreen(self._workspace),
             ViewType.SETTINGS: SettingsScreen(self._env_path),
         }
-        self._view_widgets = {ViewType.AUDIO: self._audio_screen}
-        self._view_stack.addWidget(self._audio_screen)
+        self._view_widgets = {
+            ViewType.AUDIO: self._annotation_screen,
+            ViewType.INDICES: self._indices_screen,
+        }
+        self._view_stack.addWidget(self._annotation_screen)
+        self._view_stack.addWidget(self._indices_screen)
         for view_type, screen in self._screens.items():
             self._view_stack.addWidget(screen)
             self._view_widgets[view_type] = screen
@@ -170,15 +180,20 @@ class MainWindow(QMainWindow):
             self.addAction(act)
 
     def _wire(self) -> None:
-        # Workspace panel activates a file -> the audio screen loads it.
-        self._workspace_panel.fileActivated.connect(self._audio_screen.load_file)
+        # Workspace panel activates a file -> load it in the active audio screen.
+        self._workspace_panel.fileActivated.connect(self._load_in_active_audio_screen)
         self._workspace.opened.connect(self._on_workspace_opened)
 
         # Audio screen seams: status text to the shell's bar, navigate to front.
-        self._audio_screen.statusMessage.connect(self.statusBar().showMessage)
-        self._audio_screen.navigateRequested.connect(
-            lambda: self._navigate_to(ViewType.AUDIO)
-        )
+        # Each screen brings *itself* to front when it opens a file.
+        for screen, view in (
+            (self._annotation_screen, ViewType.AUDIO),
+            (self._indices_screen, ViewType.INDICES),
+        ):
+            screen.statusMessage.connect(self.statusBar().showMessage)
+            screen.navigateRequested.connect(
+                lambda v=view: self._navigate_to(v)
+            )
 
         # Home dashboard cards navigate to the matching views / manage workspaces.
         home = self._home_screen
@@ -200,7 +215,7 @@ class MainWindow(QMainWindow):
         if widget is not None:
             self._view_stack.setCurrentWidget(widget)
             # Drive the screen lifecycle so screens can populate lazily on first
-            # show. AudioScreen is a QMainWindow (not a BaseScreen), so guard.
+            # show. The audio screens are QMainWindows (not BaseScreens), so guard.
             if isinstance(widget, BaseScreen):
                 widget.activate()
         self._update_title()
@@ -211,9 +226,23 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"MagPy — {ws} — {view}")
 
     # --- audio entry point (CLI) -----------------------------------------
+    def _load_in_active_audio_screen(self, path: str | Path) -> None:
+        """Open a workspace file in whichever audio screen is showing.
+
+        On the Indices screen, load there; otherwise load on the annotation
+        screen (the default for any other view). The screen brings itself to
+        front via ``navigateRequested``.
+        """
+        screen = (
+            self._indices_screen
+            if self._current_view == ViewType.INDICES
+            else self._annotation_screen
+        )
+        screen.load_file(path)
+
     def add_audio_path(self, path: str | Path) -> None:
-        """Link ``path`` into the workspace and open it on the audio screen."""
-        self._audio_screen.add_audio_path(path)
+        """Link ``path`` into the workspace and open it on the annotation screen."""
+        self._annotation_screen.add_audio_path(path)
 
     # --- workspace lifecycle ---------------------------------------------
     def _bootstrap_workspace(self) -> None:

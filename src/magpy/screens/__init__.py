@@ -1,13 +1,15 @@
 """MagPy screens -- the multi-view workspace, ported from the legacy layout.
 
 Each screen is a self-contained pure-Qt view. Most are :class:`BaseScreen`
-subclasses; :class:`AudioScreen` is a ``QMainWindow`` so it can host its own
-docks. The honed navigation/layout was brought over largely verbatim; several
-views are still placeholders pending the rebuild.
+subclasses; the audio screens (:class:`AudioAnnotationScreen`,
+:class:`IndicesScreen`) are ``QMainWindow``\\ s sharing a :class:`BaseAudioScreen`
+core so they can host their own docks. The honed navigation/layout was brought
+over largely verbatim; several views are still placeholders pending the rebuild.
 """
 
 from .base import BaseScreen
-from .audio import AudioScreen
+from .annotation import AudioAnnotationScreen
+from .indices import IndicesScreen
 from .home import HomeScreen
 from .datasets import DatasetsScreen
 from .training import TrainingScreen
@@ -27,7 +29,8 @@ from .catalog_configs import (
 
 __all__ = [
     "BaseScreen",
-    "AudioScreen",
+    "AudioAnnotationScreen",
+    "IndicesScreen",
     "HomeScreen",
     "DatasetsScreen",
     "TrainingScreen",
