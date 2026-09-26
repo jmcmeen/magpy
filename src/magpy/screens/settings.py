@@ -126,7 +126,9 @@ class SettingsScreen(BaseScreen):
         self._device_table = QTableWidget(0, 4)
         self._device_table.setHorizontalHeaderLabels(["Device", "Type", "ID", "Memory (GB)"])
         self._device_table.verticalHeader().setVisible(False)
-        self._device_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self._device_table.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeMode.Stretch
+        )
         dev_layout.addWidget(self._device_table)
         layout.addWidget(dev_box)
 
@@ -167,9 +169,7 @@ class SettingsScreen(BaseScreen):
         controls.addWidget(save)
         box_layout.addLayout(controls)
 
-        self._env_status = QLabel(
-            f".env: {self._env_path}" if current else "No keys saved yet."
-        )
+        self._env_status = QLabel(f".env: {self._env_path}" if current else "No keys saved yet.")
         self._env_status.setStyleSheet("color: #858585;")
         self._env_status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         box_layout.addWidget(self._env_status)

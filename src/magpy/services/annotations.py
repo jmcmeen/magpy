@@ -22,7 +22,11 @@ from uuid import uuid4
 # bioamla import is confined to the services layer.
 from bioamla.datasets import (
     Annotation as _BioAnnotation,
+)
+from bioamla.datasets import (
     create_annotation as _create_bio_annotation,
+)
+from bioamla.datasets import (
     load_csv_annotations,
     load_raven_selection_table,
     save_csv_annotations,
@@ -87,7 +91,9 @@ def _is_csv(path: Path) -> bool:
 def load_annotations(path: str | Path) -> list[Annotation]:
     """Load annotations from a Raven selection table (.txt) or CSV (.csv)."""
     path = Path(path)
-    bio = load_csv_annotations(str(path)) if _is_csv(path) else load_raven_selection_table(str(path))
+    bio = (
+        load_csv_annotations(str(path)) if _is_csv(path) else load_raven_selection_table(str(path))
+    )
     return [_from_bioamla(b) for b in bio]
 
 

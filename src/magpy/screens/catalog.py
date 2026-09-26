@@ -20,8 +20,8 @@ destination, mirroring how the rest of the shell treats the workspace.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, Optional
 
 from PyQt6.QtCore import QThreadPool, QUrl
 from PyQt6.QtGui import QDesktopServices
@@ -40,7 +40,7 @@ from PyQt6.QtWidgets import (
 )
 
 from magpy.models import Workspace
-from magpy.services import CatalogRecord, KIND_AUDIO_FILE, download_records
+from magpy.services import KIND_AUDIO_FILE, CatalogRecord, download_records
 from magpy.workers import Worker
 
 from .base import BaseScreen
@@ -77,8 +77,8 @@ class CatalogScreen(BaseScreen):
         self._workspace = workspace
         self._records: list[CatalogRecord] = []
         self._inputs: dict[str, QLineEdit | QSpinBox] = {}
-        self._search_worker: Optional[Worker] = None
-        self._download_worker: Optional[Worker] = None
+        self._search_worker: Worker | None = None
+        self._download_worker: Worker | None = None
         super().__init__(parent)
 
     @property
@@ -170,9 +170,7 @@ class CatalogScreen(BaseScreen):
         worker = Worker(self._config.search_fn, **self._search_kwargs())
         self._search_worker = worker
         worker.signals.result.connect(self._on_results)
-        worker.signals.error.connect(
-            lambda exc: self._status.setText(f"Search failed: {exc}")
-        )
+        worker.signals.error.connect(lambda exc: self._status.setText(f"Search failed: {exc}"))
         worker.signals.finished.connect(self._on_search_finished)
         QThreadPool.globalInstance().start(worker)
 
@@ -184,8 +182,14 @@ class CatalogScreen(BaseScreen):
         self._records = records
         self._table.setRowCount(len(records))
         for row, rec in enumerate(records):
-            cells = [rec.common_name, rec.scientific_name, rec.quality,
-                     rec.duration, rec.location, rec.recordist]
+            cells = [
+                rec.common_name,
+                rec.scientific_name,
+                rec.quality,
+                rec.duration,
+                rec.location,
+                rec.recordist,
+            ]
             for col, text in enumerate(cells):
                 self._table.setItem(row, col, QTableWidgetItem(text))
         self._table.resizeColumnsToContents()
@@ -211,9 +215,7 @@ class CatalogScreen(BaseScreen):
         worker = Worker(download_records, self._config.source, ids, dest)
         self._download_worker = worker
         worker.signals.result.connect(self._on_downloaded)
-        worker.signals.error.connect(
-            lambda exc: self._status.setText(f"Download failed: {exc}")
-        )
+        worker.signals.error.connect(lambda exc: self._status.setText(f"Download failed: {exc}"))
         worker.signals.finished.connect(self._on_download_finished)
         QThreadPool.globalInstance().start(worker)
 

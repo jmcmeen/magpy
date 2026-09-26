@@ -7,19 +7,19 @@ VS Code activity bar style navigation with exclusive selection.
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import Optional
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QPushButton,
     QButtonGroup,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
 )
 
 
 class ViewType(Enum):
     """Available main views in the application."""
+
     HOME = auto()
     AUDIO = auto()
     INDICES = auto()
@@ -40,7 +40,7 @@ class ViewType(Enum):
 class NavButton(QPushButton):
     """Navigation button with icon and tooltip."""
 
-    def __init__(self, icon: str, tooltip: str, parent: Optional[QWidget] = None):
+    def __init__(self, icon: str, tooltip: str, parent: QWidget | None = None):
         super().__init__(icon, parent)
         self.setToolTip(tooltip)
         self.setCheckable(True)
@@ -71,7 +71,7 @@ class NavigationBar(QWidget):
 
     view_changed = pyqtSignal(ViewType)
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self._setup_ui()
 

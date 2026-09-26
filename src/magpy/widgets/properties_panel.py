@@ -8,8 +8,6 @@ depended on the removed `core.*`. A dumb view: the shell pushes data in via
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 from PyQt6.QtWidgets import QFormLayout, QGroupBox, QLabel, QVBoxLayout, QWidget
 
@@ -26,17 +24,21 @@ def _channels(samples: np.ndarray) -> int:
 
 
 class PropertiesPanel(QWidget):
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
-        self._file_rows = self._build_section(layout, "File", ["Name", "Duration", "Sample rate", "Channels"])
+        self._file_rows = self._build_section(
+            layout, "File", ["Name", "Duration", "Sample rate", "Channels"]
+        )
         self._sel_rows = self._build_section(
             layout, "Selection", ["Label", "Start", "End", "Duration", "Frequency", "Confidence"]
         )
         layout.addStretch()
         self.clear()
 
-    def _build_section(self, parent: QVBoxLayout, title: str, fields: list[str]) -> dict[str, QLabel]:
+    def _build_section(
+        self, parent: QVBoxLayout, title: str, fields: list[str]
+    ) -> dict[str, QLabel]:
         box = QGroupBox(title)
         form = QFormLayout(box)
         rows = {}
@@ -48,7 +50,7 @@ class PropertiesPanel(QWidget):
         parent.addWidget(box)
         return rows
 
-    def set_audio(self, audio: Optional[LoadedAudio]) -> None:
+    def set_audio(self, audio: LoadedAudio | None) -> None:
         if audio is None:
             for v in self._file_rows.values():
                 v.setText("—")
@@ -58,7 +60,7 @@ class PropertiesPanel(QWidget):
         self._file_rows["Sample rate"].setText(f"{audio.sample_rate} Hz")
         self._file_rows["Channels"].setText(str(_channels(audio.samples)))
 
-    def set_selection(self, ann: Optional[Annotation]) -> None:
+    def set_selection(self, ann: Annotation | None) -> None:
         if ann is None:
             for v in self._sel_rows.values():
                 v.setText("—")

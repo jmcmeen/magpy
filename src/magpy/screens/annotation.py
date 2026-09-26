@@ -16,7 +16,6 @@ purely about creating and curating annotations.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from PyQt6.QtCore import Qt, QThreadPool
 from PyQt6.QtWidgets import QDockWidget, QFileDialog, QMessageBox, QToolBar
@@ -43,7 +42,7 @@ class AudioAnnotationScreen(BaseAudioScreen):
 
     # --- screen-specific UI -----------------------------------------------
     def _create_docks(self) -> None:
-        self._detect_worker: Optional[Worker] = None
+        self._detect_worker: Worker | None = None
         self._candidates = CandidateSet(self)
 
         # Annotations + Detect dock side-by-side under the spectrogram.

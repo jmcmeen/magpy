@@ -10,8 +10,6 @@ handed to it via :meth:`set_summary`.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QAbstractItemView,
@@ -33,7 +31,7 @@ _COLUMNS = ["Index", "Value"]
 class IndicesPanel(QWidget):
     computeRequested = pyqtSignal()
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._build_ui()
 
@@ -68,7 +66,7 @@ class IndicesPanel(QWidget):
         self.compute_button.setEnabled(not running)
         self.progress.setVisible(running)
 
-    def set_summary(self, summary: Optional[IndexSummary]) -> None:
+    def set_summary(self, summary: IndexSummary | None) -> None:
         """Render an :class:`IndexSummary` (or clear the table when ``None``)."""
         if summary is None:
             self.table.setRowCount(0)
@@ -84,6 +82,4 @@ class IndicesPanel(QWidget):
             value.setToolTip(row.description)
             self.table.setItem(r, 0, name)
             self.table.setItem(r, 1, value)
-        self._caption.setText(
-            f"Over {summary.duration:.1f}s · {summary.sample_rate} Hz"
-        )
+        self._caption.setText(f"Over {summary.duration:.1f}s · {summary.sample_rate} Hz")

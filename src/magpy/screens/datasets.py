@@ -22,8 +22,6 @@ bioamla imports.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import QThreadPool
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -60,9 +58,9 @@ from .base import BaseScreen
 
 
 class DatasetsScreen(BaseScreen):
-    def __init__(self, workspace: Workspace, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, workspace: Workspace, parent: QWidget | None = None) -> None:
         self._workspace = workspace
-        self._worker: Optional[Worker] = None
+        self._worker: Worker | None = None
         self._augment_fields: dict[str, QWidget] = {}
         self._run_buttons: list[QPushButton] = []
         super().__init__(parent)
@@ -89,8 +87,10 @@ class DatasetsScreen(BaseScreen):
         header = QLabel("📁  Datasets")
         header.setStyleSheet("font-size: 22px; font-weight: bold; color: #d4d4d4;")
         layout.addWidget(header)
-        sub = QLabel("Build training data from annotated audio — sources stay immutable; "
-                     "every op writes a new dataset.")
+        sub = QLabel(
+            "Build training data from annotated audio — sources stay immutable; "
+            "every op writes a new dataset."
+        )
         sub.setWordWrap(True)
         sub.setStyleSheet("color: #858585;")
         layout.addWidget(sub)
@@ -144,13 +144,25 @@ class DatasetsScreen(BaseScreen):
         form.addRow("Source", self._path_row(self._ex_source, folder=True))
         pick_file = QPushButton("Pick file instead…")
         pick_file.clicked.connect(
-            lambda: self._pick_into(self._ex_source, folder=False,
-                                    file_filter="Audio (*.wav *.flac *.ogg *.mp3);;All files (*)"))
+            lambda: self._pick_into(
+                self._ex_source,
+                folder=False,
+                file_filter="Audio (*.wav *.flac *.ogg *.mp3);;All files (*)",
+            )
+        )
         form.addRow("", pick_file)
         self._ex_anns = QLineEdit()
-        self._ex_anns.setPlaceholderText("Optional selection table (.txt/.csv); else sidecars next to audio")
-        form.addRow("Annotations", self._path_row(
-            self._ex_anns, folder=False, file_filter="Selection tables (*.txt *.csv);;All files (*)"))
+        self._ex_anns.setPlaceholderText(
+            "Optional selection table (.txt/.csv); else sidecars next to audio"
+        )
+        form.addRow(
+            "Annotations",
+            self._path_row(
+                self._ex_anns,
+                folder=False,
+                file_filter="Selection tables (*.txt *.csv);;All files (*)",
+            ),
+        )
         self._ex_out = QLineEdit(self._default_dir("datasets", "clips"))
         form.addRow("Output dataset", self._path_row(self._ex_out, folder=True))
         self._ex_layout = QComboBox()
@@ -176,7 +188,9 @@ class DatasetsScreen(BaseScreen):
             return
         sr_text = self._ex_sr.text().strip()
         self._start(
-            extract_clips, source, out,
+            extract_clips,
+            source,
+            out,
             annotations=self._ex_anns.text().strip() or None,
             layout=self._ex_layout.currentText(),
             target_sample_rate=int(sr_text) if sr_text.isdigit() else None,
@@ -204,7 +218,8 @@ class DatasetsScreen(BaseScreen):
         form.addRow("Mode", self._pt_mode)
         self._pt_group = QLineEdit("source_file")
         self._pt_group.setToolTip(
-            "Keep rows sharing this column in one split (prevents clip leakage). Blank to disable.")
+            "Keep rows sharing this column in one split (prevents clip leakage). Blank to disable."
+        )
         form.addRow("Group by", self._pt_group)
         form.addRow(self._run_button("Partition", self._partition))
         return tab
@@ -219,8 +234,11 @@ class DatasetsScreen(BaseScreen):
             self._results.setPlainText(f"Splits must sum to 1.0 (got {total:.2f}).")
             return
         self._start(
-            partition, ds,
-            train=self._pt_train.value(), val=self._pt_val.value(), test=self._pt_test.value(),
+            partition,
+            ds,
+            train=self._pt_train.value(),
+            val=self._pt_val.value(),
+            test=self._pt_test.value(),
             mode=self._pt_mode.currentText(),
             group_by=self._pt_group.text().strip() or None,
         )

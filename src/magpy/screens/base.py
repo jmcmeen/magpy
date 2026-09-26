@@ -7,7 +7,6 @@ Provides lifecycle methods and common functionality for all screens.
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Optional
 
 from PyQt6.QtWidgets import QWidget
 
@@ -21,7 +20,7 @@ class BaseScreen(QWidget):
     and can be activated/deactivated as the user navigates.
     """
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self._is_active = False
         self._setup_ui()

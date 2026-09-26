@@ -33,8 +33,13 @@ def test_methods_exposed():
 
 
 def test_cluster_and_reduce(embeddings_dir):
-    sc = cluster_embeddings_dir(embeddings_dir, cluster_method="hdbscan", reduce_method="pca",
-                                min_cluster_size=3, find_novelty=True)
+    sc = cluster_embeddings_dir(
+        embeddings_dir,
+        cluster_method="hdbscan",
+        reduce_method="pca",
+        min_cluster_size=3,
+        find_novelty=True,
+    )
     assert isinstance(sc, EmbeddingScatter)
     assert sc.coords.shape == (30, 2)
     assert sc.labels.shape == (30,)

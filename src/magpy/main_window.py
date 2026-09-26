@@ -191,9 +191,7 @@ class MainWindow(QMainWindow):
             (self._indices_screen, ViewType.INDICES),
         ):
             screen.statusMessage.connect(self.statusBar().showMessage)
-            screen.navigateRequested.connect(
-                lambda v=view: self._navigate_to(v)
-            )
+            screen.navigateRequested.connect(lambda v=view: self._navigate_to(v))
 
         # Home dashboard cards navigate to the matching views / manage workspaces.
         home = self._home_screen
@@ -282,7 +280,8 @@ class MainWindow(QMainWindow):
     def _open_workspace(self, path: str) -> None:
         if not is_bundle(path):
             QMessageBox.warning(
-                self, "Not a workspace",
+                self,
+                "Not a workspace",
                 f"{path}\n\nis not a MagPy workspace ({BUNDLE_SUFFIX} bundle).",
             )
             return

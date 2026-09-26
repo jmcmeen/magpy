@@ -11,7 +11,6 @@ the import or animating it fights Qt's single-threaded GUI model for no real win
 from __future__ import annotations
 
 import sys
-from typing import Optional
 
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QColor, QFont, QPainter, QPixmap
@@ -46,7 +45,7 @@ def _build_splash() -> QSplashScreen:
     return splash
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv if argv is None else argv)
     app = QApplication(argv)
     app.setApplicationName("MagPy")

@@ -43,8 +43,13 @@ def test_run_detection_rejects_unknown_kind():
 
 def test_candidate_to_annotation_remaps_freq_and_records_provenance():
     c = Candidate(
-        start_time=1.0, end_time=2.0, confidence=0.9,
-        low_freq=500.0, high_freq=5000.0, label="x", detector="RIBBIT",
+        start_time=1.0,
+        end_time=2.0,
+        confidence=0.9,
+        low_freq=500.0,
+        high_freq=5000.0,
+        label="x",
+        detector="RIBBIT",
     )
     ann = candidate_to_annotation(c)
     assert (ann.start_time, ann.end_time) == (1.0, 2.0)

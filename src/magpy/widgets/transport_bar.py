@@ -8,8 +8,6 @@ signals. It holds no playback state and imports no bioamla.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QSlider, QWidget
 
@@ -26,7 +24,7 @@ class TransportBar(QWidget):
     stopRequested = pyqtSignal()
     seekRequested = pyqtSignal(float)  # seconds
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._duration = 0.0
         self._scrubbing = False

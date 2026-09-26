@@ -9,8 +9,6 @@ annotation state of its own. No bioamla imports.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QAbstractItemView,
@@ -25,7 +23,7 @@ from magpy.services import Annotation
 _COLUMNS = ["Label", "Start (s)", "End (s)", "Low (Hz)", "High (Hz)"]
 
 
-def _freq(v: Optional[float]) -> str:
+def _freq(v: float | None) -> str:
     return "" if v is None else f"{v:.0f}"
 
 
@@ -68,8 +66,13 @@ class AnnotationTable(QTableWidget):
             self._syncing = False
 
     def _set_row(self, row: int, ann: Annotation) -> None:
-        values = [ann.label, f"{ann.start_time:.3f}", f"{ann.end_time:.3f}",
-                  _freq(ann.low_freq), _freq(ann.high_freq)]
+        values = [
+            ann.label,
+            f"{ann.start_time:.3f}",
+            f"{ann.end_time:.3f}",
+            _freq(ann.low_freq),
+            _freq(ann.high_freq),
+        ]
         for col, text in enumerate(values):
             item = QTableWidgetItem(text)
             if col == 0:
@@ -78,7 +81,7 @@ class AnnotationTable(QTableWidget):
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self.setItem(row, col, item)
 
-    def _on_model_selection(self, ann: Optional[Annotation]) -> None:
+    def _on_model_selection(self, ann: Annotation | None) -> None:
         self._syncing = True
         try:
             if ann is None:
@@ -106,6 +109,6 @@ class AnnotationTable(QTableWidget):
             ann.label = item.text()
             self._model.update(ann)
 
-    def _find(self, row: int) -> Optional[Annotation]:
+    def _find(self, row: int) -> Annotation | None:
         id_ = self.item(row, 0).data(Qt.ItemDataRole.UserRole)
         return next((a for a in self._model.items() if a.id == id_), None)

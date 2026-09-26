@@ -12,7 +12,6 @@ right-click removes the owning artifact. A dumb view bound to the model.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QAction
@@ -35,7 +34,7 @@ _ARTIFACT_ROLE = Qt.ItemDataRole.UserRole + 1  # owning artifact id
 class WorkspacePanel(QWidget):
     fileActivated = pyqtSignal(str)  # absolute path
 
-    def __init__(self, workspace: Workspace, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, workspace: Workspace, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._workspace = workspace
 
@@ -95,7 +94,9 @@ class WorkspacePanel(QWidget):
         else:  # KIND_AUDIO_FILE
             self._add_file(group, resolved, artifact.id, imported=imported)
 
-    def _add_file(self, parent: QTreeWidgetItem, path: Path, artifact_id: str, *, imported: bool) -> None:
+    def _add_file(
+        self, parent: QTreeWidgetItem, path: Path, artifact_id: str, *, imported: bool
+    ) -> None:
         label = path.name
         if imported:
             label += "  (imported)"

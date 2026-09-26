@@ -28,7 +28,9 @@ def _view(qapp):
     model = AnnotationSet()
     view = SpectrogramView(model)
     db = np.zeros((64, 200), dtype="float32")
-    view.set_image(SpectrogramImage(db=db, freqs=np.linspace(0, 8000, 64), times=np.linspace(0, 10, 200)))
+    view.set_image(
+        SpectrogramImage(db=db, freqs=np.linspace(0, 8000, 64), times=np.linspace(0, 10, 200))
+    )
     return model, view
 
 

@@ -27,8 +27,6 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .annotations import Annotation
-
 # bioamla import is confined to the services layer.
 from bioamla.detect import (
     AcceleratingPatternDetector,
@@ -38,6 +36,8 @@ from bioamla.detect import (
     RibbitDetector,
     detect_all,
 )
+
+from .annotations import Annotation
 
 
 @dataclass(frozen=True)

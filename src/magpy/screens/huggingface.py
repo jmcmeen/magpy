@@ -18,9 +18,7 @@ environment (set it on the Settings screen).
 
 from __future__ import annotations
 
-from typing import Optional
-
-from PyQt6.QtCore import QThreadPool, Qt
+from PyQt6.QtCore import Qt, QThreadPool
 from PyQt6.QtWidgets import (
     QAbstractItemView,
     QFormLayout,
@@ -56,9 +54,9 @@ class HuggingFaceScreen(BaseScreen):
     def __init__(self, workspace: Workspace, parent=None) -> None:
         self._workspace = workspace
         self._cache: list = []
-        self._pull_worker: Optional[Worker] = None
-        self._cache_worker: Optional[Worker] = None
-        self._purge_worker: Optional[Worker] = None
+        self._pull_worker: Worker | None = None
+        self._cache_worker: Worker | None = None
+        self._purge_worker: Worker | None = None
         self._pull_succeeded = False
         self._scan_quiet = False
         super().__init__(parent)
@@ -161,9 +159,7 @@ class HuggingFaceScreen(BaseScreen):
         sample_rate = self._sr_input.value() or None
         split = self._split_input.text().strip() or None
         self._set_busy(True, f"Pulling {repo_id}…")
-        worker = Worker(
-            pull_dataset, repo_id, dest, split=split, sample_rate=sample_rate
-        )
+        worker = Worker(pull_dataset, repo_id, dest, split=split, sample_rate=sample_rate)
         self._pull_worker = worker
         worker.signals.result.connect(self._on_pulled)
         worker.signals.error.connect(lambda exc: self._status.setText(f"Pull failed: {exc}"))
@@ -213,7 +209,9 @@ class HuggingFaceScreen(BaseScreen):
             for col, text in enumerate((repo.repo_id, repo.repo_type, repo.size_human)):
                 item = QTableWidgetItem(text)
                 if col == 2:
-                    item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                    item.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
                 self._table.setItem(row, col, item)
         self._table.resizeColumnsToContents()
         if not self._scan_quiet:
@@ -229,13 +227,16 @@ class HuggingFaceScreen(BaseScreen):
         # Destructive and shared: this clears the *entire* HuggingFace hub cache
         # (every tool on the machine, not just MagPy's pulls). Re-downloading can
         # be gigabytes, so confirm before wiping.
-        if QMessageBox.question(
-            self,
-            "Purge Hugging Face cache",
-            "This clears the entire local Hugging Face hub cache (all datasets and "
-            "models, system-wide — not just MagPy's pulls). Re-downloading may take "
-            "a while.\n\nContinue?",
-        ) != QMessageBox.StandardButton.Yes:
+        if (
+            QMessageBox.question(
+                self,
+                "Purge Hugging Face cache",
+                "This clears the entire local Hugging Face hub cache (all datasets and "
+                "models, system-wide — not just MagPy's pulls). Re-downloading may take "
+                "a while.\n\nContinue?",
+            )
+            != QMessageBox.StandardButton.Yes
+        ):
             return
         self._set_busy(True, "Purging cache…")
         worker = Worker(purge_hf_cache)

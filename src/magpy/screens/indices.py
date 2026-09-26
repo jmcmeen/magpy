@@ -14,8 +14,6 @@ editing here.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import Qt, QThreadPool
 from PyQt6.QtWidgets import QDockWidget, QMessageBox
 
@@ -30,7 +28,7 @@ class IndicesScreen(BaseAudioScreen):
     """Audio view + acoustic-indices (whole-file summary) panel."""
 
     def _create_docks(self) -> None:
-        self._indices_worker: Optional[Worker] = None
+        self._indices_worker: Worker | None = None
         self._indices_panel = IndicesPanel()
         dock = QDockWidget("Indices", self)
         dock.setObjectName("IndicesDock")

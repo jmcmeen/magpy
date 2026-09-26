@@ -14,8 +14,6 @@ nothing here imports bioamla.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from magpy.services import Candidate
@@ -26,10 +24,10 @@ class CandidateSet(QObject):
     selectionChanged = pyqtSignal(object)  # Candidate | None
     thresholdChanged = pyqtSignal(float)  # confidence filter moved
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._items: list[Candidate] = []
-        self._selected: Optional[Candidate] = None
+        self._selected: Candidate | None = None
         self._threshold: float = 0.0
         self._detector: str = ""
 
@@ -45,7 +43,7 @@ class CandidateSet(QObject):
         return len(self._items)
 
     @property
-    def selected(self) -> Optional[Candidate]:
+    def selected(self) -> Candidate | None:
         return self._selected
 
     @property
@@ -68,7 +66,7 @@ class CandidateSet(QObject):
     def clear(self) -> None:
         self.set_all([])
 
-    def select(self, candidate: Optional[Candidate]) -> None:
+    def select(self, candidate: Candidate | None) -> None:
         if candidate is not self._selected:
             self._selected = candidate
             self.selectionChanged.emit(candidate)

@@ -22,7 +22,6 @@ status bar and navigation: ``statusMessage(str)`` and ``navigateRequested()``.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QAction
@@ -60,13 +59,13 @@ class BaseAudioScreen(QMainWindow):
     statusMessage = pyqtSignal(str)
     navigateRequested = pyqtSignal()
 
-    def __init__(self, workspace: Workspace, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, workspace: Workspace, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._workspace = workspace
         self._document = Document(self)
         self._playback = PlaybackController(self)
         self._annotations = self._document.annotations
-        self._current_audio_path: Optional[Path] = None
+        self._current_audio_path: Path | None = None
         self._suppress_autosave = False
 
         self._build_ui()
@@ -155,9 +154,9 @@ class BaseAudioScreen(QMainWindow):
         self._annotations.selectionChanged.connect(self._properties.set_selection)
         # Reflect in-place edits (e.g. a label change) when the selected one changes.
         self._annotations.changed.connect(
-            lambda ann: self._properties.set_selection(ann)
-            if ann is self._annotations.selected
-            else None
+            lambda ann: (
+                self._properties.set_selection(ann) if ann is self._annotations.selected else None
+            )
         )
 
     def _on_workspace_changed(self, _bundle_dir: object) -> None:
@@ -185,11 +184,15 @@ class BaseAudioScreen(QMainWindow):
         path, _ = QFileDialog.getOpenFileName(self, "Import audio (copies)", "", _AUDIO_FILTER)
         if not path:
             return
-        if QMessageBox.question(
-            self, "Import a copy",
-            "Import copies the file into the workspace's bundle.\n\nLink instead to "
-            "reference it in place without copying. Continue with import?",
-        ) != QMessageBox.StandardButton.Yes:
+        if (
+            QMessageBox.question(
+                self,
+                "Import a copy",
+                "Import copies the file into the workspace's bundle.\n\nLink instead to "
+                "reference it in place without copying. Continue with import?",
+            )
+            != QMessageBox.StandardButton.Yes
+        ):
             return
         try:
             artifact = self._workspace.import_(path, KIND_AUDIO_FILE)
@@ -222,7 +225,7 @@ class BaseAudioScreen(QMainWindow):
         self._suppress_autosave = False
         self.navigateRequested.emit()
 
-    def _on_audio_changed(self, audio: Optional[object]) -> None:
+    def _on_audio_changed(self, audio: object | None) -> None:
         self._on_audio_reset()  # let the subclass invalidate its own layers
         if audio is None:
             self._spectrogram.set_image(None)

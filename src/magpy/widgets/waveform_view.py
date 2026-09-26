@@ -10,8 +10,6 @@ Ctrl+click. No bioamla imports.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 import pyqtgraph as pg
 from PyQt6.QtCore import Qt, pyqtSignal
@@ -28,7 +26,7 @@ _ANN_SELECTED_BRUSH = pg.mkBrush(255, 140, 0, 90)
 class WaveformView(QWidget):
     seekRequested = pyqtSignal(float)  # seconds
 
-    def __init__(self, annotations: AnnotationSet, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, annotations: AnnotationSet, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._model = annotations
         self._duration = 0.0
@@ -119,7 +117,7 @@ class WaveformView(QWidget):
             self._regions[ann.id] = region
         self._restyle(self._model.selected)
 
-    def _restyle(self, selected: Optional[Annotation]) -> None:
+    def _restyle(self, selected: Annotation | None) -> None:
         sel_id = selected.id if selected is not None else None
         for ann_id, region in self._regions.items():
             region.setBrush(_ANN_SELECTED_BRUSH if ann_id == sel_id else _ANN_BRUSH)

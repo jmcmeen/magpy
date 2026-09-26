@@ -71,7 +71,8 @@ def extract_clips(
     exclude_labels: str | None = None,
 ) -> DatasetOutcome:
     r = extract_labeled_dataset(
-        source, output_dir,
+        source,
+        output_dir,
         annotations=annotations or None,
         layout=layout,
         padding_ms=padding_ms,
@@ -83,8 +84,7 @@ def extract_clips(
     )
     return DatasetOutcome(
         op="extract-clips",
-        message=_summary(r, ("clips_written", "files_processed", "failed", "skipped"))
-        or "Done.",
+        message=_summary(r, ("clips_written", "files_processed", "failed", "skipped")) or "Done.",
         output_dir=str(r.get("output_dir", output_dir)),
         details=r,
     )
@@ -102,8 +102,13 @@ def partition(
     group_by: str | None = "source_file",
 ) -> DatasetOutcome:
     r = partition_dataset(
-        dataset_dir, splits=(train, val, test), seed=seed, stratify=stratify,
-        mode=mode, group_by=group_by or None, verbose=False,
+        dataset_dir,
+        splits=(train, val, test),
+        seed=seed,
+        stratify=stratify,
+        mode=mode,
+        group_by=group_by or None,
+        verbose=False,
     )
     splits = r.get("splits")
     if isinstance(splits, dict):
@@ -112,10 +117,14 @@ def partition(
         )
     else:
         message = "Partitioned."
-    return DatasetOutcome(op="partition", message=message or "Partitioned.", output_dir=dataset_dir, details=r)
+    return DatasetOutcome(
+        op="partition", message=message or "Partitioned.", output_dir=dataset_dir, details=r
+    )
 
 
-def merge(dataset_paths: list[str], output_dir: str, *, target_format: str | None = None) -> DatasetOutcome:
+def merge(
+    dataset_paths: list[str], output_dir: str, *, target_format: str | None = None
+) -> DatasetOutcome:
     paths = [p for p in dataset_paths if p and p.strip()]
     if len(paths) < 2:
         raise ValueError("Merge needs at least two dataset folders.")
@@ -149,7 +158,9 @@ AUGMENT_PARAMS: tuple[BatchParam, ...] = (
 )
 
 
-def augment(input_dir: str, output_dir: str, params: dict, *, recursive: bool = True) -> DatasetOutcome:
+def augment(
+    input_dir: str, output_dir: str, params: dict, *, recursive: bool = True
+) -> DatasetOutcome:
     cfg = AugmentationConfig(
         add_noise=bool(params.get("add_noise", False)),
         noise_min_snr=float(params.get("noise_min_snr", 3.0)),
@@ -185,7 +196,9 @@ def dataset_stats(dataset_dir: str) -> DatasetOutcome:
     )
 
 
-def build_manifest(dataset_dir: str, *, name: str = "", sample_rate: int | None = None) -> DatasetOutcome:
+def build_manifest(
+    dataset_dir: str, *, name: str = "", sample_rate: int | None = None
+) -> DatasetOutcome:
     manifest = build_manifest_from_metadata(dataset_dir, name=name, sample_rate=sample_rate or None)
     out_path = str(Path(dataset_dir) / "dataset.json")
     save_dataset_manifest(manifest, out_path)
@@ -195,7 +208,9 @@ def build_manifest(dataset_dir: str, *, name: str = "", sample_rate: int | None 
         "classes": len(getattr(manifest, "label2id", {}) or {}),
         "manifest": out_path,
     }
-    return DatasetOutcome(op="manifest", message=f"Wrote {out_path}", output_dir=dataset_dir, details=details)
+    return DatasetOutcome(
+        op="manifest", message=f"Wrote {out_path}", output_dir=dataset_dir, details=details
+    )
 
 
 def generate_license(dataset_dir: str, *, fmt: str = "text") -> DatasetOutcome:

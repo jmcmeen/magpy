@@ -19,8 +19,6 @@ binds to the Workspace only for sensible default paths. No bioamla imports.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import QThreadPool
 from PyQt6.QtWidgets import (
     QFileDialog,
@@ -51,9 +49,9 @@ from .base import BaseScreen
 
 
 class TrainingScreen(BaseScreen):
-    def __init__(self, workspace: Workspace, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, workspace: Workspace, parent: QWidget | None = None) -> None:
         self._workspace = workspace
-        self._worker: Optional[Worker] = None
+        self._worker: Worker | None = None
         self._train_fields: dict[str, QWidget] = {}
         super().__init__(parent)
 
@@ -116,22 +114,29 @@ class TrainingScreen(BaseScreen):
         form = QFormLayout(tab)
 
         self._train_dataset = QLineEdit(self._default_dir("datasets"))
-        self._train_dataset.setPlaceholderText("HF dataset id, metadata.csv, or class-subdir folder")
+        self._train_dataset.setPlaceholderText(
+            "HF dataset id, metadata.csv, or class-subdir folder"
+        )
         ds_row = QHBoxLayout()
         ds_row.addWidget(self._train_dataset, stretch=1)
         pick_dir = QPushButton("Folder…")
         pick_dir.clicked.connect(lambda: self._pick_into(self._train_dataset, folder=True))
         pick_csv = QPushButton("CSV…")
         pick_csv.clicked.connect(
-            lambda: self._pick_into(self._train_dataset, folder=False, file_filter="CSV (*.csv)"))
+            lambda: self._pick_into(self._train_dataset, folder=False, file_filter="CSV (*.csv)")
+        )
         ds_row.addWidget(pick_dir)
         ds_row.addWidget(pick_csv)
         form.addRow("Train dataset", ds_row)
 
         self._training_dir = QLineEdit(self._default_dir("models"))
         self._training_dir.setPlaceholderText("Output dir for checkpoints / best_model / logs")
-        form.addRow("Training dir", self._path_row(
-            self._training_dir, lambda: self._pick_into(self._training_dir, folder=True)))
+        form.addRow(
+            "Training dir",
+            self._path_row(
+                self._training_dir, lambda: self._pick_into(self._training_dir, folder=True)
+            ),
+        )
 
         for param in TRAIN_PARAMS:
             widget = make_field(param)
@@ -156,16 +161,28 @@ class TrainingScreen(BaseScreen):
         tab = QWidget()
         form = QFormLayout(tab)
         self._eval_model = QLineEdit("bioamla/scp-frogs")
-        form.addRow("Model (HF id or path)", self._path_row(
-            self._eval_model, lambda: self._pick_into(self._eval_model, folder=True)))
+        form.addRow(
+            "Model (HF id or path)",
+            self._path_row(
+                self._eval_model, lambda: self._pick_into(self._eval_model, folder=True)
+            ),
+        )
         self._eval_audio = QLineEdit(self._default_dir())
-        form.addRow("Audio folder", self._path_row(
-            self._eval_audio, lambda: self._pick_into(self._eval_audio, folder=True)))
+        form.addRow(
+            "Audio folder",
+            self._path_row(
+                self._eval_audio, lambda: self._pick_into(self._eval_audio, folder=True)
+            ),
+        )
         self._eval_truth = QLineEdit()
         self._eval_truth.setPlaceholderText("Ground-truth CSV (file + label columns)")
-        form.addRow("Ground truth CSV", self._path_row(
-            self._eval_truth,
-            lambda: self._pick_into(self._eval_truth, folder=False, file_filter="CSV (*.csv)")))
+        form.addRow(
+            "Ground truth CSV",
+            self._path_row(
+                self._eval_truth,
+                lambda: self._pick_into(self._eval_truth, folder=False, file_filter="CSV (*.csv)"),
+            ),
+        )
         self._eval_file_col = QLineEdit("file_name")
         form.addRow("File column", self._eval_file_col)
         self._eval_label_col = QLineEdit("label")
@@ -180,14 +197,25 @@ class TrainingScreen(BaseScreen):
         tab = QWidget()
         form = QFormLayout(tab)
         self._pred_model = QLineEdit("bioamla/scp-frogs")
-        form.addRow("Model (HF id or path)", self._path_row(
-            self._pred_model, lambda: self._pick_into(self._pred_model, folder=True)))
+        form.addRow(
+            "Model (HF id or path)",
+            self._path_row(
+                self._pred_model, lambda: self._pick_into(self._pred_model, folder=True)
+            ),
+        )
         self._pred_file = QLineEdit()
         self._pred_file.setPlaceholderText("Audio file to classify")
-        form.addRow("Audio file", self._path_row(
-            self._pred_file, lambda: self._pick_into(
-                self._pred_file, folder=False,
-                file_filter="Audio (*.wav *.flac *.ogg *.mp3 *.m4a);;All files (*)")))
+        form.addRow(
+            "Audio file",
+            self._path_row(
+                self._pred_file,
+                lambda: self._pick_into(
+                    self._pred_file,
+                    folder=False,
+                    file_filter="Audio (*.wav *.flac *.ogg *.mp3 *.m4a);;All files (*)",
+                ),
+            ),
+        )
         self._pred_button = QPushButton("Predict")
         self._pred_button.clicked.connect(self._predict)
         form.addRow(self._pred_button)
@@ -232,15 +260,23 @@ class TrainingScreen(BaseScreen):
     def _format(outcome) -> str:
         # TrainOutcome / EvalOutcome / PredictOutcome -> human text (duck-typed).
         if hasattr(outcome, "model_path"):
-            return (f"{outcome.message}\nModel: {outcome.model_path}\n"
-                    f"Epochs: {outcome.epochs}   accuracy: {outcome.final_accuracy}   "
-                    f"loss: {outcome.final_loss}")
+            return (
+                f"{outcome.message}\nModel: {outcome.model_path}\n"
+                f"Epochs: {outcome.epochs}   accuracy: {outcome.final_accuracy}   "
+                f"loss: {outcome.final_loss}"
+            )
         if hasattr(outcome, "f1_score"):
-            return (f"{outcome.message}\nSamples: {outcome.total_samples}\n"
-                    f"Accuracy: {outcome.accuracy:.3f}   Precision: {outcome.precision:.3f}   "
-                    f"Recall: {outcome.recall:.3f}   F1: {outcome.f1_score:.3f}")
+            return (
+                f"{outcome.message}\nSamples: {outcome.total_samples}\n"
+                f"Accuracy: {outcome.accuracy:.3f}   Precision: {outcome.precision:.3f}   "
+                f"Recall: {outcome.recall:.3f}   F1: {outcome.f1_score:.3f}"
+            )
         if hasattr(outcome, "predicted_label"):
-            lines = [f"Predicted: {outcome.predicted_label}  ({outcome.confidence:.3f})", "", "Top-k:"]
+            lines = [
+                f"Predicted: {outcome.predicted_label}  ({outcome.confidence:.3f})",
+                "",
+                "Top-k:",
+            ]
             lines += [f"  {label}: {score:.3f}" for label, score in outcome.top_k]
             return "\n".join(lines)
         return str(outcome)
@@ -253,7 +289,8 @@ class TrainingScreen(BaseScreen):
             self._results.setPlainText("Set both a train dataset and a training dir.")
             return
         confirm = QMessageBox.question(
-            self, "Start training?",
+            self,
+            "Start training?",
             "Training runs in-process and may take a long time. It cannot be "
             "cancelled once started, and closing MagPy will abort it. Continue?",
         )
@@ -272,7 +309,10 @@ class TrainingScreen(BaseScreen):
             return
         self._results.setPlainText("Evaluating…")
         self._start(
-            evaluate_model, audio, model, truth,
+            evaluate_model,
+            audio,
+            model,
+            truth,
             file_column=self._eval_file_col.text().strip() or "file_name",
             label_column=self._eval_label_col.text().strip() or "label",
         )

@@ -17,7 +17,6 @@ load it into the document, load its annotations" edge.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -50,20 +49,20 @@ class Workspace(QObject):
     closed = pyqtSignal()
     artifactsChanged = pyqtSignal()
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._dir: Optional[Path] = None
-        self._manifest: Optional[WorkspaceManifest] = None
+        self._dir: Path | None = None
+        self._manifest: WorkspaceManifest | None = None
 
     # --- identity ---------------------------------------------------------
     @property
-    def dir(self) -> Optional[Path]:
+    def dir(self) -> Path | None:
         """The ``.magpy`` bundle directory, or ``None`` if nothing is open."""
         return self._dir
 
     # Back-compat alias used by some views/dialogs as "the workspace location".
     @property
-    def root(self) -> Optional[Path]:
+    def root(self) -> Path | None:
         return self._dir
 
     @property
@@ -171,10 +170,10 @@ class Workspace(QObject):
         return resolve_artifact_path(self._dir, artifact).exists()
 
     # --- annotations (keyed per file) ------------------------------------
-    def _artifact_for_audio(self, path: Path) -> Optional[Artifact]:
+    def _artifact_for_audio(self, path: Path) -> Artifact | None:
         """The artifact that owns ``path``: a direct file match, else a containing folder."""
         path = Path(path)
-        folder: Optional[Artifact] = None
+        folder: Artifact | None = None
         for art in self.artifacts:
             resolved = resolve_artifact_path(self._dir, art)
             if art.kind == KIND_AUDIO_FILE and resolved == path:
@@ -183,11 +182,11 @@ class Workspace(QObject):
                 folder = art
         return folder
 
-    def artifact_for_path(self, path: str | Path) -> Optional[Artifact]:
+    def artifact_for_path(self, path: str | Path) -> Artifact | None:
         """The artifact owning ``path`` (a file artifact, or a containing folder)."""
         return self._artifact_for_audio(Path(path))
 
-    def annotation_key(self, path: str | Path) -> Optional[str]:
+    def annotation_key(self, path: str | Path) -> str | None:
         """Stable per-file key for annotation storage, or ``None`` if unknown."""
         path = Path(path)
         art = self._artifact_for_audio(path)

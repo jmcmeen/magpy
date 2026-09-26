@@ -31,7 +31,10 @@ def test_artifact_round_trip(tmp_path):
     assert len(loaded.artifacts) == 1
     got = loaded.artifacts[0]
     assert (got.kind, got.path, got.mode, got.id) == (
-        wio.KIND_AUDIO_FILE, "/audio/a.wav", wio.MODE_LINKED, art.id,
+        wio.KIND_AUDIO_FILE,
+        "/audio/a.wav",
+        wio.MODE_LINKED,
+        art.id,
     )
 
 

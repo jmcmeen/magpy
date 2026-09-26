@@ -24,7 +24,6 @@ for a default input folder and to link audio outputs back in. No bioamla imports
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from PyQt6.QtCore import QThreadPool
 from PyQt6.QtWidgets import (
@@ -55,11 +54,11 @@ from .base import BaseScreen
 
 
 class BatchScreen(BaseScreen):
-    def __init__(self, workspace: Workspace, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, workspace: Workspace, parent: QWidget | None = None) -> None:
         self._workspace = workspace
-        self._worker: Optional[Worker] = None
+        self._worker: Worker | None = None
         self._field_widgets: dict[str, object] = {}
-        self._last_output: Optional[Path] = None
+        self._last_output: Path | None = None
         super().__init__(parent)
 
     @property
@@ -221,16 +220,18 @@ class BatchScreen(BaseScreen):
         params = self._collect_params()
         self._set_running(True, spec)
         worker = Worker(
-            run_batch_op, spec.key, input_dir, output_dir, params,
+            run_batch_op,
+            spec.key,
+            input_dir,
+            output_dir,
+            params,
             with_progress=spec.supports_progress,
         )
         self._worker = worker
         if spec.supports_progress:
             worker.signals.progress.connect(self._on_progress)
         worker.signals.result.connect(self._on_result)
-        worker.signals.error.connect(
-            lambda exc: self._results.setPlainText(f"Failed:\n{exc}")
-        )
+        worker.signals.error.connect(lambda exc: self._results.setPlainText(f"Failed:\n{exc}"))
         worker.signals.finished.connect(self._on_finished)
         QThreadPool.globalInstance().start(worker)
 

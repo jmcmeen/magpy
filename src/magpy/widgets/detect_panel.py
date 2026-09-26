@@ -19,8 +19,6 @@ and performs no compute. No bioamla imports.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QAbstractItemView,
@@ -45,7 +43,7 @@ from magpy.services import DETECTOR_SPECS, Candidate, DetectorSpec
 _COLUMNS = ["Detector", "Start (s)", "End (s)", "Conf.", "Low (Hz)", "High (Hz)"]
 
 
-def _freq(v: Optional[float]) -> str:
+def _freq(v: float | None) -> str:
     return "" if v is None else f"{v:.0f}"
 
 
@@ -54,7 +52,7 @@ class DetectPanel(QWidget):
     promoteRequested = pyqtSignal(list)  # list[Candidate]
     candidateActivated = pyqtSignal(float, float)  # (start, end) for go-to/seek
 
-    def __init__(self, candidates: CandidateSet, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, candidates: CandidateSet, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._model = candidates
         self._syncing = False
@@ -193,8 +191,14 @@ class DetectPanel(QWidget):
             self._rows = self._model.visible_items()
             self.table.setRowCount(len(self._rows))
             for row, c in enumerate(self._rows):
-                values = [c.detector, f"{c.start_time:.3f}", f"{c.end_time:.3f}",
-                          f"{c.confidence:.2f}", _freq(c.low_freq), _freq(c.high_freq)]
+                values = [
+                    c.detector,
+                    f"{c.start_time:.3f}",
+                    f"{c.end_time:.3f}",
+                    f"{c.confidence:.2f}",
+                    _freq(c.low_freq),
+                    _freq(c.high_freq),
+                ]
                 for col, text in enumerate(values):
                     self.table.setItem(row, col, QTableWidgetItem(text))
             self._on_model_selection(self._model.selected)
@@ -208,7 +212,7 @@ class DetectPanel(QWidget):
         finally:
             self._syncing = False
 
-    def _on_model_selection(self, candidate: Optional[Candidate]) -> None:
+    def _on_model_selection(self, candidate: Candidate | None) -> None:
         self._syncing = True
         try:
             if candidate is None or candidate not in self._rows:

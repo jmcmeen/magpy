@@ -6,18 +6,16 @@ Displays welcome information and quick access to common tasks.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
+    QFrame,
     QGridLayout,
+    QHBoxLayout,
     QLabel,
     QPushButton,
     QScrollArea,
-    QFrame,
+    QVBoxLayout,
+    QWidget,
 )
 
 from magpy import __version__
@@ -50,7 +48,7 @@ class ActionCard(QPushButton):
         icon: str,
         title: str,
         description: str,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setFixedSize(200, 140)
@@ -228,9 +226,7 @@ class HomeScreen(BaseScreen):
                 "<b>Audacity</b> - open-source audio editor",
             )
         )
-        info_layout.addWidget(
-            self._create_info_section("Acknowledgments", "Coming soon.")
-        )
+        info_layout.addWidget(self._create_info_section("Acknowledgments", "Coming soon."))
         main_layout.addLayout(info_layout)
 
         # Footer: license + version on a single line.
@@ -294,5 +290,7 @@ class HomeScreen(BaseScreen):
             btn.setToolTip(path)
             btn.setFlat(True)
             btn.setStyleSheet("color: #0e9c9c; background: transparent; border: none;")
-            btn.clicked.connect(lambda _checked=False, p=path: self.recent_workspace_clicked.emit(p))
+            btn.clicked.connect(
+                lambda _checked=False, p=path: self.recent_workspace_clicked.emit(p)
+            )
             self._recent_layout.addWidget(btn)

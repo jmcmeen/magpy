@@ -18,7 +18,6 @@ imports.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import pyqtgraph as pg
 from PyQt6.QtCore import QThreadPool
@@ -52,9 +51,9 @@ _NOVEL_PEN = pg.mkPen(255, 60, 60, width=2)
 
 
 class ExploreScreen(BaseScreen):
-    def __init__(self, workspace: Workspace, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, workspace: Workspace, parent: QWidget | None = None) -> None:
         self._workspace = workspace
-        self._worker: Optional[Worker] = None
+        self._worker: Worker | None = None
         self._scatter_result = None
         super().__init__(parent)
 
@@ -110,8 +109,12 @@ class ExploreScreen(BaseScreen):
         self._n_clusters.setValue(0)
         self._n_clusters.setToolTip("kmeans/agglomerative target; 0 = auto")
         self._novelty = QCheckBox("Flag novel")
-        for lbl, w in (("Cluster", self._cluster_combo), ("Reduce", self._reduce_combo),
-                       ("Min size", self._min_size), ("k", self._n_clusters)):
+        for lbl, w in (
+            ("Cluster", self._cluster_combo),
+            ("Reduce", self._reduce_combo),
+            ("Min size", self._min_size),
+            ("k", self._n_clusters),
+        ):
             ctrl.addWidget(QLabel(lbl))
             ctrl.addWidget(w)
         ctrl.addWidget(self._novelty)
@@ -163,7 +166,8 @@ class ExploreScreen(BaseScreen):
             return
         self._set_running(True)
         worker = Worker(
-            cluster_embeddings_dir, input_dir,
+            cluster_embeddings_dir,
+            input_dir,
             cluster_method=self._cluster_combo.currentText(),
             reduce_method=self._reduce_combo.currentText(),
             min_cluster_size=self._min_size.value(),
@@ -193,12 +197,17 @@ class ExploreScreen(BaseScreen):
         spots = []
         for i in range(len(scatter.labels)):
             label = int(scatter.labels[i])
-            brush = _NOISE_BRUSH if label < 0 else pg.mkBrush(pg.intColor(label, hues=12, alpha=200))
+            brush = (
+                _NOISE_BRUSH if label < 0 else pg.mkBrush(pg.intColor(label, hues=12, alpha=200))
+            )
             pen = _NOVEL_PEN if i in novel else pg.mkPen(None)
-            spots.append({"pos": (float(scatter.x[i]), float(scatter.y[i])), "brush": brush, "pen": pen})
+            spots.append(
+                {"pos": (float(scatter.x[i]), float(scatter.y[i])), "brush": brush, "pen": pen}
+            )
         self._scatter.setData(spots)
         self._plot.setTitle(
-            f"{scatter.cluster_method} · {scatter.reduce_method}", color="#d4d4d4", size="10pt")
+            f"{scatter.cluster_method} · {scatter.reduce_method}", color="#d4d4d4", size="10pt"
+        )
         self._status.setText(scatter.message)
 
     def _export(self) -> None:

@@ -7,17 +7,9 @@ core so they can host their own docks. The honed navigation/layout was brought
 over largely verbatim; several views are still placeholders pending the rebuild.
 """
 
-from .base import BaseScreen
 from .annotation import AudioAnnotationScreen
-from .indices import IndicesScreen
-from .home import HomeScreen
-from .datasets import DatasetsScreen
-from .training import TrainingScreen
+from .base import BaseScreen
 from .batch import BatchScreen
-from .explore import ExploreScreen
-from .huggingface import HuggingFaceScreen
-from .placeholder import PlaceholderScreen, coming_soon_card
-from .settings import SettingsScreen
 from .catalog import CatalogConfig, CatalogField, CatalogScreen
 from .catalog_configs import (
     CATALOG_CONFIGS,
@@ -26,6 +18,14 @@ from .catalog_configs import (
     MACAULAY_CONFIG,
     XENO_CANTO_CONFIG,
 )
+from .datasets import DatasetsScreen
+from .explore import ExploreScreen
+from .home import HomeScreen
+from .huggingface import HuggingFaceScreen
+from .indices import IndicesScreen
+from .placeholder import PlaceholderScreen, coming_soon_card
+from .settings import SettingsScreen
+from .training import TrainingScreen
 
 __all__ = [
     "BaseScreen",

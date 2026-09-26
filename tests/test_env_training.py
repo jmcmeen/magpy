@@ -28,8 +28,9 @@ def test_run_training_filters_unknown_kwargs(monkeypatch):
     def fake_train_ast(**kw):
         seen.clear()
         seen.update(kw)
-        return type("R", (), {"model_path": "m", "epochs": 1,
-                              "final_accuracy": None, "final_loss": None})()
+        return type(
+            "R", (), {"model_path": "m", "epochs": 1, "final_accuracy": None, "final_loss": None}
+        )()
 
     monkeypatch.setattr(T, "train_ast", fake_train_ast)
     T.run_training("ds", "dir", {"num_train_epochs": 3, "bogus": 1})
@@ -44,8 +45,9 @@ def test_run_training_disables_load_best_for_incompatible_strategies(monkeypatch
     def fake_train_ast(**kw):
         seen.clear()
         seen.update(kw)
-        return type("R", (), {"model_path": "m", "epochs": 1,
-                              "final_accuracy": None, "final_loss": None})()
+        return type(
+            "R", (), {"model_path": "m", "epochs": 1, "final_accuracy": None, "final_loss": None}
+        )()
 
     monkeypatch.setattr(T, "train_ast", fake_train_ast)
     # Compatible: leave train_ast's default (True) alone.

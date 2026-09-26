@@ -45,17 +45,31 @@ class EnvVarSpec:
 # env-var audit. Keys/tokens take effect in-session (read lazily); HF_HOME is
 # read by huggingface_hub at import, so it is flagged restart-only.
 KNOWN_ENV_VARS: tuple[EnvVarSpec, ...] = (
-    EnvVarSpec("XC_API_KEY", "Xeno-Canto API key",
-               "Required for Xeno-Canto search/download (API v3)."),
-    EnvVarSpec("EBIRD_API_KEY", "eBird API key",
-               "Required for eBird observation queries. Get one at ebird.org/api/keygen."),
-    EnvVarSpec("HF_TOKEN", "Hugging Face token",
-               "Hugging Face Hub auth: pushing models/datasets and pulling private/gated ones."),
-    EnvVarSpec("HUGGING_FACE_HUB_TOKEN", "Hugging Face token (alt)",
-               "Alternate name huggingface_hub honours; set whichever your tooling expects."),
-    EnvVarSpec("HF_HOME", "Hugging Face cache dir",
-               "Location of the local HF model/dataset cache.",
-               secret=False, applies_on_restart=True),
+    EnvVarSpec(
+        "XC_API_KEY", "Xeno-Canto API key", "Required for Xeno-Canto search/download (API v3)."
+    ),
+    EnvVarSpec(
+        "EBIRD_API_KEY",
+        "eBird API key",
+        "Required for eBird observation queries. Get one at ebird.org/api/keygen.",
+    ),
+    EnvVarSpec(
+        "HF_TOKEN",
+        "Hugging Face token",
+        "Hugging Face Hub auth: pushing models/datasets and pulling private/gated ones.",
+    ),
+    EnvVarSpec(
+        "HUGGING_FACE_HUB_TOKEN",
+        "Hugging Face token (alt)",
+        "Alternate name huggingface_hub honours; set whichever your tooling expects.",
+    ),
+    EnvVarSpec(
+        "HF_HOME",
+        "Hugging Face cache dir",
+        "Location of the local HF model/dataset cache.",
+        secret=False,
+        applies_on_restart=True,
+    ),
 )
 
 _KNOWN_NAMES = tuple(spec.name for spec in KNOWN_ENV_VARS)

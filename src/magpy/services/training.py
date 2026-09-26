@@ -70,17 +70,32 @@ class PredictOutcome:
 # Curated subset of train_ast's keyword args (names match exactly). The rest keep
 # bioamla's defaults. finetune_mode 'feature-extraction' freezes the encoder.
 TRAIN_PARAMS: tuple[BatchParam, ...] = (
-    BatchParam("base_model", "Base model", "str", "MIT/ast-finetuned-audioset-10-10-0.4593",
-               help="Pretrained AST checkpoint to fine-tune (HF id)."),
+    BatchParam(
+        "base_model",
+        "Base model",
+        "str",
+        "MIT/ast-finetuned-audioset-10-10-0.4593",
+        help="Pretrained AST checkpoint to fine-tune (HF id).",
+    ),
     BatchParam("num_train_epochs", "Epochs", "int", 1, 1, 1000, 1, 0),
     BatchParam("learning_rate", "Learning rate", "float", 5e-05, 0.0, 1.0, 1e-05, 6),
     BatchParam("per_device_train_batch_size", "Batch size", "int", 8, 1, 512, 1, 0),
-    BatchParam("category_label_column", "Label column", "str", "category",
-               help="CSV/HF column whose unique values are the classes (audiofolders use 'label')."),
-    BatchParam("finetune_mode", "Fine-tune mode", "choice", "full",
-               choices=("full", "feature-extraction")),
-    BatchParam("eval_strategy", "Eval strategy", "choice", "epoch", choices=("epoch", "steps", "no")),
-    BatchParam("save_strategy", "Save strategy", "choice", "epoch", choices=("epoch", "steps", "no")),
+    BatchParam(
+        "category_label_column",
+        "Label column",
+        "str",
+        "category",
+        help="CSV/HF column whose unique values are the classes (audiofolders use 'label').",
+    ),
+    BatchParam(
+        "finetune_mode", "Fine-tune mode", "choice", "full", choices=("full", "feature-extraction")
+    ),
+    BatchParam(
+        "eval_strategy", "Eval strategy", "choice", "epoch", choices=("epoch", "steps", "no")
+    ),
+    BatchParam(
+        "save_strategy", "Save strategy", "choice", "epoch", choices=("epoch", "steps", "no")
+    ),
     BatchParam("fp16", "FP16 (NVIDIA)", "bool", False),
     BatchParam("bf16", "BF16 (Ampere+)", "bool", False),
 )
@@ -134,8 +149,12 @@ def evaluate_model(
 ) -> EvalOutcome:
     """Evaluate ``model_path`` over ``audio_dir`` against a ground-truth CSV."""
     r = evaluate_directory(
-        audio_dir, model_path, ground_truth_csv,
-        file_column=file_column, label_column=label_column, use_fp16=use_fp16,
+        audio_dir,
+        model_path,
+        ground_truth_csv,
+        file_column=file_column,
+        label_column=label_column,
+        use_fp16=use_fp16,
     )
     return EvalOutcome(
         accuracy=float(getattr(r, "accuracy", 0.0) or 0.0),
@@ -155,6 +174,6 @@ def predict_audio(filepath: str, model_path: str = "bioamla/scp-frogs") -> Predi
     return PredictOutcome(
         predicted_label=str(getattr(r, "predicted_label", "")),
         confidence=float(getattr(r, "confidence", 0.0) or 0.0),
-        top_k=list(zip(labels, scores)),
+        top_k=list(zip(labels, scores, strict=False)),
         message="Prediction complete.",
     )

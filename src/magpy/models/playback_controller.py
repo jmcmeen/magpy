@@ -9,8 +9,6 @@ engine meets the event loop; it imports the services seam, never bioamla.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import QObject, QTimer, pyqtSignal
 
 from magpy.services import LoadedAudio, PlaybackState, Player
@@ -23,7 +21,7 @@ class PlaybackController(QObject):
     durationChanged = pyqtSignal(float)  # seconds
     stateChanged = pyqtSignal(object)  # PlaybackState
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._player = Player()
         self._state = PlaybackState.STOPPED
@@ -31,7 +29,7 @@ class PlaybackController(QObject):
         self._timer.setInterval(_POLL_MS)
         self._timer.timeout.connect(self._tick)
 
-    def set_audio(self, audio: Optional[LoadedAudio]) -> None:
+    def set_audio(self, audio: LoadedAudio | None) -> None:
         """Load (or clear) the audio to play and reset transport state."""
         self.stop()
         if audio is None:
@@ -80,7 +78,9 @@ class PlaybackController(QObject):
         state = self._player.state
         if state != PlaybackState.PLAYING:
             self._timer.stop()
-            self.positionChanged.emit(0.0 if state == PlaybackState.STOPPED else self._player.position)
+            self.positionChanged.emit(
+                0.0 if state == PlaybackState.STOPPED else self._player.position
+            )
             self._set_state(state)
 
     def _set_state(self, state: PlaybackState) -> None:

@@ -33,8 +33,14 @@ from pathlib import Path
 # bioamla import is confined to the services layer.
 from bioamla.catalogs import (
     EBirdService,
+)
+from bioamla.catalogs import (
     inat as _inat,
+)
+from bioamla.catalogs import (
     macaulay as _macaulay,
+)
+from bioamla.catalogs import (
     xeno_canto as _xc,
 )
 
@@ -113,17 +119,21 @@ def search_macaulay(
     min_rating: int = 0,
     max_results: int = 30,
 ) -> list[CatalogRecord]:
-    result = _macaulay.search_audio(
-        scientific_name=scientific_name or None,
-        region=region or None,
-        min_rating=min_rating,
-        max_results=max_results,
-    ) if not common_name else _macaulay.search(
-        common_name=common_name,
-        scientific_name=scientific_name or None,
-        region=region or None,
-        min_rating=min_rating,
-        max_results=max_results,
+    result = (
+        _macaulay.search_audio(
+            scientific_name=scientific_name or None,
+            region=region or None,
+            min_rating=min_rating,
+            max_results=max_results,
+        )
+        if not common_name
+        else _macaulay.search(
+            common_name=common_name,
+            scientific_name=scientific_name or None,
+            region=region or None,
+            min_rating=min_rating,
+            max_results=max_results,
+        )
     )
     records = []
     for r in getattr(result, "recordings", []):

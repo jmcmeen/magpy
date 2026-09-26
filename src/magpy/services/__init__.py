@@ -10,14 +10,13 @@ exception (it wraps an inherently stateful engine). Not Qt-aware.
 
 from .annotations import Annotation, load_annotations, save_annotations
 from .audio_io import LoadedAudio, find_audio_files, load_audio
-from .detect import (
-    DETECTOR_SPECS,
-    Candidate,
-    DetectorSpec,
-    ParamSpec,
-    candidate_to_annotation,
-    detector_label,
-    run_detection,
+from .batch import (
+    BATCH_OPS,
+    BATCH_OPS_BY_KEY,
+    BatchOpSpec,
+    BatchOutcome,
+    BatchParam,
+    run_batch_op,
 )
 from .catalogs import (
     SOURCE_EBIRD,
@@ -30,23 +29,6 @@ from .catalogs import (
     search_inaturalist,
     search_macaulay,
     search_xeno_canto,
-)
-from .huggingface import (
-    HFCachedRepo,
-    HFPullResult,
-    HFPurgeResult,
-    human_bytes,
-    pull_dataset,
-    purge_hf_cache,
-    scan_hf_cache,
-)
-from .batch import (
-    BATCH_OPS,
-    BATCH_OPS_BY_KEY,
-    BatchOpSpec,
-    BatchOutcome,
-    BatchParam,
-    run_batch_op,
 )
 from .cluster import (
     CLUSTER_METHODS,
@@ -66,6 +48,15 @@ from .datasets import (
     merge,
     partition,
 )
+from .detect import (
+    DETECTOR_SPECS,
+    Candidate,
+    DetectorSpec,
+    ParamSpec,
+    candidate_to_annotation,
+    detector_label,
+    run_detection,
+)
 from .env_io import (
     KNOWN_ENV_VARS,
     EnvVarSpec,
@@ -75,17 +66,18 @@ from .env_io import (
     read_env,
     write_env,
 )
-from .indices import IndexRow, IndexSummary, compute_indices
-from .training import (
-    TRAIN_PARAMS,
-    EvalOutcome,
-    PredictOutcome,
-    TrainOutcome,
-    evaluate_model,
-    list_available_models,
-    predict_audio,
-    run_training,
+from .huggingface import (
+    HFCachedRepo,
+    HFPullResult,
+    HFPurgeResult,
+    human_bytes,
+    pull_dataset,
+    purge_hf_cache,
+    scan_hf_cache,
 )
+from .indices import IndexRow, IndexSummary, compute_indices
+from .playback import PlaybackState, Player
+from .spectrogram import SpectrogramImage, compute_spectrogram
 from .system_info import (
     DependencyReport,
     DependencyRow,
@@ -96,8 +88,16 @@ from .system_info import (
     device_report,
     version_info,
 )
-from .playback import PlaybackState, Player
-from .spectrogram import SpectrogramImage, compute_spectrogram
+from .training import (
+    TRAIN_PARAMS,
+    EvalOutcome,
+    PredictOutcome,
+    TrainOutcome,
+    evaluate_model,
+    list_available_models,
+    predict_audio,
+    run_training,
+)
 from .workspace_io import (
     BUNDLE_SUFFIX,
     KIND_AUDIO_FILE,

@@ -13,8 +13,8 @@ from dataclasses import dataclass
 from magpy.services import (
     HFCachedRepo,
     HFPullResult,
-    human_bytes,
     huggingface,
+    human_bytes,
     pull_dataset,
     purge_hf_cache,
     scan_hf_cache,

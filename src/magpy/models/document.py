@@ -10,8 +10,6 @@ Views read state through it and never reach into the services layer directly.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from magpy.models.annotations import AnnotationSet
@@ -23,13 +21,13 @@ class Document(QObject):
 
     audioChanged = pyqtSignal(object)  # LoadedAudio | None
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._audio: Optional[LoadedAudio] = None
+        self._audio: LoadedAudio | None = None
         self._annotations = AnnotationSet(self)
 
     @property
-    def audio(self) -> Optional[LoadedAudio]:
+    def audio(self) -> LoadedAudio | None:
         """The currently loaded audio, or ``None`` if nothing is open."""
         return self._audio
 
@@ -38,7 +36,7 @@ class Document(QObject):
         """The annotations for the open audio."""
         return self._annotations
 
-    def set_audio(self, audio: Optional[LoadedAudio]) -> None:
+    def set_audio(self, audio: LoadedAudio | None) -> None:
         """Replace the current audio (and clear annotations) and notify observers."""
         self._audio = audio
         self._annotations.clear()

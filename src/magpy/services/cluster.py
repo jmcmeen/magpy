@@ -87,7 +87,8 @@ def cluster_embeddings_dir(
     matrix = _stack(arrays)
 
     summary = cluster_embeddings(
-        matrix, method=cluster_method,
+        matrix,
+        method=cluster_method,
         n_clusters=n_clusters if n_clusters else None,
         min_cluster_size=min_cluster_size,
     )

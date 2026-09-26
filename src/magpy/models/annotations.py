@@ -9,8 +9,6 @@ here imports bioamla.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from magpy.services import Annotation
@@ -23,10 +21,10 @@ class AnnotationSet(QObject):
     reset = pyqtSignal()  # bulk replacement (e.g. a table was loaded/cleared)
     selectionChanged = pyqtSignal(object)  # Annotation | None
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._items: list[Annotation] = []
-        self._selected: Optional[Annotation] = None
+        self._selected: Annotation | None = None
 
     def items(self) -> list[Annotation]:
         """A copy of the annotations, ordered by start time."""
@@ -36,7 +34,7 @@ class AnnotationSet(QObject):
         return len(self._items)
 
     @property
-    def selected(self) -> Optional[Annotation]:
+    def selected(self) -> Annotation | None:
         return self._selected
 
     def add(self, annotation: Annotation) -> None:
@@ -67,7 +65,7 @@ class AnnotationSet(QObject):
     def clear(self) -> None:
         self.set_all([])
 
-    def select(self, annotation: Optional[Annotation]) -> None:
+    def select(self, annotation: Annotation | None) -> None:
         if annotation is not self._selected:
             self._selected = annotation
             self.selectionChanged.emit(annotation)

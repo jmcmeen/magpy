@@ -28,8 +28,6 @@ No bioamla imports -- only the MagPy model and the plain ``Annotation`` DTO.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import pyqtgraph as pg
 from PyQt6.QtCore import QRectF, Qt
 from PyQt6.QtWidgets import (
@@ -70,20 +68,20 @@ def _get_colormap(name: str) -> pg.ColorMap:
 class SpectrogramView(QWidget):
     """Renders a dB spectrogram with time (s) on x and frequency (Hz) on y."""
 
-    def __init__(self, annotations: AnnotationSet, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, annotations: AnnotationSet, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._model = annotations
         self._f_max = 0.0
         self._duration = 0.0
-        self._db_min: Optional[float] = None
-        self._db_max: Optional[float] = None
+        self._db_min: float | None = None
+        self._db_max: float | None = None
         self._auto_scroll = False
         self._regions: dict[str, pg.LinearRegionItem] = {}  # time-only annotations
         self._boxes: dict[str, QGraphicsRectItem] = {}  # unselected freq-bounded annotations
         self._labels: dict[str, pg.TextItem] = {}
-        self._selection: Optional[object] = None  # LinearRegionItem | RectROI
-        self._edit_roi: Optional[pg.RectROI] = None  # the selected box, made editable
-        self._edit_id: Optional[str] = None
+        self._selection: object | None = None  # LinearRegionItem | RectROI
+        self._edit_roi: pg.RectROI | None = None  # the selected box, made editable
+        self._edit_id: str | None = None
         self._syncing = False  # guards the rebuild path (build -> signals -> handlers)
         self._editing = False  # guards the edit path (drag -> model.update -> rebuild)
 
@@ -180,7 +178,7 @@ class SpectrogramView(QWidget):
             self._plot.setYRange(0.0, self._f_max, padding=0)
 
     # --- spectrogram image ------------------------------------------------
-    def set_image(self, img: Optional[SpectrogramImage]) -> None:
+    def set_image(self, img: SpectrogramImage | None) -> None:
         """Render ``img``, or clear the view when ``None``."""
         if img is None:
             self._image.clear()
@@ -233,13 +231,16 @@ class SpectrogramView(QWidget):
         y0c, y1c = y0 + (y1 - y0) * 0.3, y0 + (y1 - y0) * 0.7
         mid = (x0 + x1) / 2
         roi = pg.RectROI(
-            [mid - x_span / 2, y0c], [x_span, y1c - y0c],
-            pen=_SEL_PEN, movable=True, resizable=True,
+            [mid - x_span / 2, y0c],
+            [x_span, y1c - y0c],
+            pen=_SEL_PEN,
+            movable=True,
+            resizable=True,
         )
         self._selection = roi
         self._plot.addItem(roi)
 
-    def selection_bounds(self) -> Optional[tuple[float, float, Optional[float], Optional[float]]]:
+    def selection_bounds(self) -> tuple[float, float, float | None, float | None] | None:
         """Current selection as ``(start, end, low_freq, high_freq)`` or ``None``.
 
         ``low_freq``/``high_freq`` are ``None`` for a time region. Bounds are
@@ -305,8 +306,11 @@ class SpectrogramView(QWidget):
                 if ann.id == sel_id:
                     # The selected freq-box is editable: a draggable/resizable ROI.
                     roi = pg.RectROI(
-                        [ann.start_time, low], [ann.duration, high - low],
-                        pen=_BOX_SELECTED_PEN, movable=True, resizable=True,
+                        [ann.start_time, low],
+                        [ann.duration, high - low],
+                        pen=_BOX_SELECTED_PEN,
+                        movable=True,
+                        resizable=True,
                     )
                     roi.sigRegionChangeFinished.connect(self._on_box_edited)
                     self._plot.addItem(roi)
@@ -321,7 +325,8 @@ class SpectrogramView(QWidget):
                 label_y = high
             else:
                 region = pg.LinearRegionItem(
-                    values=(ann.start_time, ann.end_time), movable=False,
+                    values=(ann.start_time, ann.end_time),
+                    movable=False,
                     brush=_ANN_SELECTED_BRUSH if ann.id == sel_id else _ANN_BRUSH,
                 )
                 self._plot.addItem(region)

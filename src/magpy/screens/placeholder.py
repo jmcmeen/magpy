@@ -8,8 +8,6 @@ implementation when it lands; the nav wiring doesn't change.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout, QWidget
 
@@ -20,8 +18,7 @@ def coming_soon_card(icon: str, title: str, description: str) -> QFrame:
     """Build the dashed 'Coming Soon' card used by placeholder views."""
     card = QFrame()
     card.setStyleSheet(
-        "QFrame { background-color: #252526; border: 2px dashed #3c3c3c;"
-        " border-radius: 8px; }"
+        "QFrame { background-color: #252526; border: 2px dashed #3c3c3c; border-radius: 8px; }"
     )
     layout = QVBoxLayout(card)
     layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -33,9 +30,7 @@ def coming_soon_card(icon: str, title: str, description: str) -> QFrame:
     layout.addWidget(icon_label)
 
     title_label = QLabel(title)
-    title_label.setStyleSheet(
-        "font-size: 24px; font-weight: bold; color: #d4d4d4; border: none;"
-    )
+    title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #d4d4d4; border: none;")
     title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
     layout.addWidget(title_label)
 
@@ -62,7 +57,7 @@ class PlaceholderScreen(BaseScreen):
         name: str,
         icon: str,
         description: str,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> None:
         # Set fields before super().__init__, which calls _setup_ui().
         self._name = name
