@@ -14,5 +14,10 @@ Layering (see ARCHITECTURE.md):
     screens/   compose widgets + view-models into workspace views
 """
 
-__version__ = "0.2.0"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("magpy-gui")
+except PackageNotFoundError:  # running from a source tree without an install
+    __version__ = "0.0.0"
 __author__ = "John McMeen"

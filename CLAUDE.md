@@ -23,10 +23,10 @@ The project uses **`uv`**; a `Makefile` wraps the common tasks:
 ```bash
 make sync      # uv sync -- create/refresh .venv, install deps + dev group
 make run       # launch the GUI (magpy-gui -> magpy.app:main)
-make test      # uv run pytest   (no tests/ yet)
-make lint      # uv run ruff check src
-make format    # uv run black src && ruff check --fix src
-make check     # lint + test
+make test      # uv run pytest
+make lint      # uv run ruff check src tests
+make fmt       # ruff format + ruff check --fix (src, tests)
+make check     # lint + format check + test
 make help      # list targets
 ```
 

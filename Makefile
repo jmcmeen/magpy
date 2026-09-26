@@ -3,11 +3,13 @@
 
 UV ?= uv
 
-.PHONY: help sync lock run cli test lint format check clean
+.PHONY: help install sync lock run cli test lint fmt fmt-check check clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
+
+install: sync ## Alias for sync
 
 sync: ## Create/refresh the venv and install deps (incl. dev group)
 	$(UV) sync
@@ -25,13 +27,16 @@ test: ## Run the test suite
 	$(UV) run pytest
 
 lint: ## Lint with ruff
-	$(UV) run ruff check src
+	$(UV) run ruff check src tests
 
-format: ## Format with black and apply ruff autofixes
-	$(UV) run black src
-	$(UV) run ruff check --fix src
+fmt: ## Auto-format and apply lint fixes
+	$(UV) run ruff format src tests
+	$(UV) run ruff check --fix src tests
 
-check: lint test ## Lint then test
+fmt-check: ## Check formatting without modifying files
+	$(UV) run ruff format --check src tests
+
+check: lint fmt-check test ## Lint, format check, then test
 
 clean: ## Remove caches and build artifacts
 	rm -rf .pytest_cache .ruff_cache dist build *.egg-info

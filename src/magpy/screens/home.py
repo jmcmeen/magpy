@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
     QFrame,
 )
 
+from magpy import __version__
 from magpy.widgets import ViewType
 
 from .base import BaseScreen
@@ -234,7 +235,7 @@ class HomeScreen(BaseScreen):
 
         # Footer: license + version on a single line.
         footer = QLabel(
-            "MIT License  ·  Built with Python & PyQt6 on bioamla  ·  Version 0.0.1"
+            f"MIT License  ·  Built with Python & PyQt6 on bioamla  ·  Version {__version__}"
         )
         footer.setStyleSheet("font-size: 11px; color: #606060;")
         footer.setAlignment(Qt.AlignmentFlag.AlignCenter)

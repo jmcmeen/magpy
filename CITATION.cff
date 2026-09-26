@@ -1,0 +1,12 @@
+# Citation metadata (Citation File Format 1.2.0 — https://citation-file-format.github.io).
+# `version`/`date-released` are omitted so this file never drifts from the actual release.
+cff-version: 1.2.0
+title: "magpy: a PyQt6 GUI for bioacoustics analysis"
+message: "If you use this software, please cite it using this metadata."
+type: software
+authors:
+  - family-names: McMeen
+    given-names: John
+    email: johnmcmeen@gmail.com
+repository-code: "https://github.com/jmcmeen/magpy"
+license: MIT
