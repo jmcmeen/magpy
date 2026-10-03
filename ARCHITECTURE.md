@@ -68,6 +68,10 @@ These were measured before the seam was designed; re-verify if bioamla changes.
 | Finding | Measurement | Design consequence |
 |---|---|---|
 | STFT is fast at steady state | `viz.compute_stft` 30s@48k ≈ **50 ms** on `librosa`/`scipy` backends | Spectrogram of a view window computes **synchronously** on the UI thread. |
+| STFT cost follows the column count, not the file length | any window of a **1 h** recording at a 3000-column budget ≈ **10–50 ms** | The view renders **only the visible window** at screen resolution (`services.render_spectrogram`), never a whole-file spectrogram. |
+| `compute_measurements` takes a path and decodes the whole file per call | one call per annotation, each a full decode | `services.measurements` writes each annotation's clip to a temp WAV and measures that (cost follows the clip). Upstream wish: a samples-based entry point. |
+| `predict_file` builds a new `ASTInference` per call | model load ≈ seconds each | `services.identify` constructs one engine per run and calls `predict_topk` per clip. |
+| AST prediction needs fixes newer than bioamla 0.2.3 | on 0.2.3, `ASTInference` fails for checkpoints without `preprocessor_config.json` (incl. `bioamla/scp-frogs`), on Apple Silicon (device mismatch), and wherever torchcodec cannot load FFmpeg | Fixed in bioamla after 0.2.3. Until that release is installed, Identify and Training → Predict surface bioamla's error rather than a result. |
 | `backend="auto"` triggers torch init | first call ≈ **18 s** (torch warmup + GPU) | Services **pin `backend="librosa"`** for interactive rendering; keep `auto`/`torch` off the interactive path. |
 | `bioamla.ml` imports lazily | `import bioamla.ml` ≈ **0.01 s**; torch loads only on first ML call | ML stays cheap to reference; do heavy work in a worker; lazy-import ML submodules at screen activation. |
 | `AudioPlayer` callbacks fire on the audio thread | `play/pause/stop/seek/position/state`; non-blocking `play()`; `on_position_change`/`on_complete` callbacks run on sounddevice's stream thread | Don't use those callbacks for UI. Wrap in a `QObject` + `QTimer` that **polls** `position`/`state` on the UI thread and emits `positionChanged`/`stateChanged`. |
@@ -327,11 +331,58 @@ possibly long-file loads. Do **not** thread per-view-window spectrogram/indices.
   **"Untitled"** (was "Scratch"), and `app.main` shows a code-drawn **splash** before
   the heavy `MainWindow` import (deferred so the splash paints first). First
   shell-construction test (`tests/test_main_window.py`, Qt test-mode isolated).
-- **Next:** the shell still doubles as the AUDIO view-model — extract a dedicated
-  one as it grows. Open polish: candidate overlays on the spectrogram, batch
-  CSV-metadata mode, per-file audio editing on the Datasets screen (vs. Batch),
-  point→file interaction on the Explore scatter (click a point to open its audio),
-  and subprocess-isolated training (killable, crash-isolated).
+- **Done — slice 18 (viewport spectrogram):** `services.render_spectrogram(samples,
+  sr, t0, t1, params, max_cols=)` renders a time window with the hop widened to fit
+  a column budget, on a **fixed dBFS reference** (so levels don't shift as the view
+  moves). `SpectrogramView` is viewport-driven: it emits `renderRequested(t0, t1,
+  cols)` for the visible span plus a half-width margin (debounced; skipped when the
+  current image already covers the view sharply) and the screen answers with
+  `set_image`. The display floor is estimated once per recording from the median
+  level; brightness/contrast move the floor/span from there. `SpectrogramParams`
+  (FFT size, overlap, window) are chosen in a popup on the controls row.
+  `WaveformView` likewise draws a min/max envelope of the visible window and links
+  its time axis to the spectrogram's. This **supersedes** slice 1's whole-file
+  `compute_spectrogram` for interactive use (kept for short clips).
+- **Done — slice 19 (direct manipulation):** `widgets/_plot.AudioViewBox` replaces
+  pyqtgraph's mouse model for both audio views: left-drag draws (`selectionDrawn`),
+  wheel zooms time at the cursor (Ctrl/Cmd: frequency; horizontal: pan), right/
+  middle-drag pans. Drawing commits an annotation immediately -- undo is the safety
+  net -- so slice 15's place-then-confirm selection survives only as the keyboard
+  path (S/B, Enter). Click selects / seeks, double-click plays. The selected box is
+  an 8-handle ROI; a selected time-only region is draggable. Overlays are coloured
+  per label (`label_color`). `IndicesScreen` turns drawing off (drag pans).
+- **Done — slice 20 (annotation workflow):** `AnnotationSet` owns **undo/redo** by
+  snapshot (annotations are mutated in place, so it diffs against the last
+  published state rather than capturing a "before"); `update_many` makes a bulk
+  edit one step; `set_all(..., undoable=True)` is an edit of the current recording
+  (import) vs. the default fresh history (a different file). The screen adds an
+  active label for new boxes, 1-9 label keys, N/P stepping, and Z zoom-to-selection.
+  `PlaybackController` gained `play_range`, loop, and speed (`Player` resamples by
+  output rate, positions stay in recording time).
+- **Done — slice 21 (measurements):** `services.measurements` describes every
+  bioamla metric (`MEASUREMENTS`) and measures annotations from the in-memory
+  samples. `AnnotationTable` shows the chosen keys as columns after the editable
+  label/bounds and a read-only confidence column; the screen measures changed
+  annotations off-thread (cache keyed by geometry, debounced) and pushes values in.
+  Export: Raven table, CSV, or CSV with measurement columns.
+- **Done — slice 22 (candidates on the spectrogram + Identify):** the candidate
+  layer draws as dashed boxes (`SpectrogramView.bind_candidates`). `services.identify`
+  labels annotations with an AST classifier -- one engine per run, per-clip temp
+  WAVs, progress + cooperative cancel; if every clip fails it raises the first error
+  instead of returning nothing. `IdentifyDialog` picks model, scope (selected /
+  unlabelled / all) and a confidence floor. Run for real against `bioamla/scp-frogs`
+  on fixed bioamla; mapping unit-tested against a stand-in engine.
+- **Settings seam:** every `QSettings` comes from `magpy.settings.app_settings()`.
+  `QSettings(org, app)` ignores `setDefaultFormat`, so without the seam tests cannot
+  be kept out of the real per-user store (Qt's test mode does not redirect
+  `QSettings`). `tests/conftest.py` points it at a temp directory.
+- **Next:** extract a dedicated audio view-model from `BaseAudioScreen` as it grows.
+  Open: memory-mapped / streamed audio for multi-hour files (the spectrogram and
+  waveform already render by window, but `load_audio` still decodes the whole file
+  into RAM), band-filtered playback of a box, multi-select in the selection table,
+  spectrogram-slice and selection-spectrum views, batch CSV-metadata mode, per-file
+  audio editing on the Datasets screen (vs. Batch), point→file interaction on the
+  Explore scatter, and subprocess-isolated training (killable, crash-isolated).
 - **Reference:** the previous generation is preserved under `legacy/magpy/`
   (built on the removed `bioamla.controllers`/`core.*` API; does not import).
   Mine it for UI ideas only.

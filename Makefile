@@ -3,7 +3,7 @@
 
 UV ?= uv
 
-.PHONY: help install sync lock run cli test lint fmt fmt-check check clean
+.PHONY: help install sync lock run test lint fmt fmt-check check clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -17,11 +17,8 @@ sync: ## Create/refresh the venv and install deps (incl. dev group)
 lock: ## Resolve and write uv.lock
 	$(UV) lock
 
-run: ## Launch the GUI
-	$(UV) run magpy-gui
-
-cli: ## Run the CLI (pass args via ARGS=...)
-	$(UV) run magpy $(ARGS)
+run: ## Launch the GUI (open a file with FILE=path/to/recording.wav)
+	$(UV) run magpy-gui $(FILE)
 
 test: ## Run the test suite
 	$(UV) run pytest

@@ -101,8 +101,20 @@ class Workspace(QObject):
 
     # --- artifacts --------------------------------------------------------
     def link(self, path: str | Path, kind: str | None = None) -> Artifact:
-        """Add ``path`` as a *linked* (referenced, not copied) artifact."""
+        """Add ``path`` as a *linked* (referenced, not copied) artifact.
+
+        Linking a path that is already linked returns the existing artifact, so
+        re-opening a file doesn't list it twice (or split its annotations).
+        """
         path = Path(path)
+        kind = kind or (KIND_FOLDER if path.is_dir() else KIND_AUDIO_FILE)
+        for existing in self.artifacts:
+            if (
+                existing.mode == MODE_LINKED
+                and existing.kind == kind
+                and Path(existing.path) == path
+            ):
+                return existing
         artifact = Artifact(
             kind=kind or (KIND_FOLDER if path.is_dir() else KIND_AUDIO_FILE),
             path=str(path),

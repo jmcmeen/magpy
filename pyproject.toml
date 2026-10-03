@@ -35,7 +35,7 @@ classifiers = [
 # so sounddevice is transitive too. numpy is declared because services/widgets
 # pass arrays around directly. This list grows as the wrapper adds real imports.
 dependencies = [
-    "bioamla>=0.2.0",
+    "bioamla>=0.2.3",
     "PyQt6>=6.11.0",
     "pyqtgraph>=0.13.0",
     "numpy>=1.24.0",

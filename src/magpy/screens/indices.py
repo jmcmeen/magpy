@@ -38,6 +38,9 @@ class IndicesScreen(BaseAudioScreen):
 
     def _wire_extra(self) -> None:
         self._indices_panel.computeRequested.connect(self._compute_indices)
+        # No annotation editing here: dragging pans instead of drawing a box.
+        self._spectrogram.set_draw_enabled(False)
+        self._waveform.set_draw_enabled(False)
 
     def _on_audio_reset(self) -> None:
         self._indices_panel.set_summary(None)

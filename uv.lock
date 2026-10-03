@@ -360,11 +360,10 @@ wheels = [
 
 [[package]]
 name = "bioamla"
-version = "0.2.0"
+version = "0.2.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "audiomentations" },
-    { name = "click" },
     { name = "datasets", extra = ["audio"] },
     { name = "evaluate" },
     { name = "hdbscan" },
@@ -382,7 +381,6 @@ dependencies = [
     { name = "pyinaturalist" },
     { name = "python-dotenv" },
     { name = "requests" },
-    { name = "rich" },
     { name = "scikit-learn", version = "1.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scikit-learn", version = "1.9.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -397,9 +395,9 @@ dependencies = [
     { name = "transformers", extra = ["torch"] },
     { name = "umap-learn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8f/6d/57ec684ac5d30d62890453e2c2069afa342730767eaae89cc9c3a52744ea/bioamla-0.2.0.tar.gz", hash = "sha256:4558df64daf4d06f57a5dfea6751776673bb87576f0b090905ac1e40046ba73a", size = 219059, upload-time = "2026-06-12T14:31:50.603Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/52/c5/11f778a33c46592989c6596ccc598065f0452922ef8857f2e58c77ad58a8/bioamla-0.2.3.tar.gz", hash = "sha256:415c9b27f3ac8c3fbd7e958009c671b7161e28f466fe63f3cd0d1b6218ff0c15", size = 226415, upload-time = "2026-06-29T19:21:35.39Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9a/74/74009b32a01e5ededd58d73ae30eb31c71b37a73e6882346a1a7c1ba66d1/bioamla-0.2.0-py3-none-any.whl", hash = "sha256:ff9c845bb78355a6ca1e3db944aaee68ca9d63d82cd75eef039577f0668ebafd", size = 269862, upload-time = "2026-06-12T14:31:49.235Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/f1/c3dc4b54ba8ccaa9e6fd9394fbbfe6123b4c380084fe4790fa9aefc11869/bioamla-0.2.3-py3-none-any.whl", hash = "sha256:ebd85335fb30f7fd63ad7a8d4234da8d8ac5068b3a48bc09687d459f08383261", size = 277567, upload-time = "2026-06-29T19:21:33.747Z" },
 ]
 
 [[package]]
@@ -2125,7 +2123,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bioamla", specifier = ">=0.2.0" },
+    { name = "bioamla", specifier = ">=0.2.3" },
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "pyqt6", specifier = ">=6.11.0" },
     { name = "pyqtgraph", specifier = ">=0.13.0" },

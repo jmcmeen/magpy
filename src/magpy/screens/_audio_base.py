@@ -9,8 +9,9 @@ shared half so it stays DRY: it is a ``QMainWindow`` (so subclasses can host the
 own docks), owns its *own* :class:`Document` and :class:`PlaybackController` (the
 screens are independent -- they do **not** share playback state), builds the
 central waveform/spectrogram/transport stack, the Properties dock, and the source
-toolbar (link / import / open), and handles loading audio and computing the
-display spectrogram.
+toolbar (link / import / open), and handles loading audio, playback (whole file,
+a range, looped, at a chosen speed), and rendering the spectrogram window the
+view asks for.
 
 Subclasses extend via four hooks -- ``_create_docks`` (add screen-specific docks),
 ``_populate_toolbar`` (append toolbar actions), ``_wire_extra`` (connect
@@ -29,8 +30,10 @@ from PyQt6.QtWidgets import (
     QDockWidget,
     QFileDialog,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QToolBar,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -40,10 +43,14 @@ from magpy.services import (
     KIND_AUDIO_FILE,
     KIND_FOLDER,
     PlaybackState,
-    compute_spectrogram,
     load_audio,
+    render_spectrogram,
 )
+from magpy.settings import app_settings
 from magpy.widgets import PropertiesPanel, SpectrogramView, TransportBar, WaveformView
+
+_SETTINGS_VIEW = "spectrogram"  # settings group shared by both audio screens
+_WAVEFORM_HEIGHT = 110  # px; the spectrogram takes everything else
 
 _AUDIO_FILTER = "Audio files (*.wav *.flac *.ogg *.mp3 *.m4a);;All files (*)"
 
@@ -69,6 +76,7 @@ class BaseAudioScreen(QMainWindow):
         self._suppress_autosave = False
 
         self._build_ui()
+        self._restore_view_settings()
         self._wire_base()
         self._wire_extra()
         # A workspace switch invalidates the open document; reset our own state.
@@ -83,19 +91,23 @@ class BaseAudioScreen(QMainWindow):
         self._waveform = WaveformView(self._annotations)
         self._spectrogram = SpectrogramView(self._annotations)
         self._transport = TransportBar()
+        # The waveform is a slim strip sharing the spectrogram's time axis; the
+        # spectrogram is the working surface and gets the rest of the height.
+        self._waveform.setFixedHeight(_WAVEFORM_HEIGHT)
+        self._waveform.link_time_axis(self._spectrogram.plot_item)
         layout.addWidget(self._create_toolbar())
-        layout.addWidget(self._waveform, stretch=1)
-        layout.addWidget(self._spectrogram, stretch=2)
+        layout.addWidget(self._waveform)
+        layout.addWidget(self._spectrogram, stretch=1)
         layout.addWidget(self._transport)
         self.setCentralWidget(central)
 
         # Properties on the right is common to both screens.
         self._properties = PropertiesPanel()
-        prop_dock = QDockWidget("Properties", self)
-        prop_dock.setObjectName("PropertiesDock")
-        prop_dock.setWidget(self._properties)
-        prop_dock.setFeatures(_DOCK_FEATURES)
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, prop_dock)
+        self._properties_dock = QDockWidget("Properties", self)
+        self._properties_dock.setObjectName("PropertiesDock")
+        self._properties_dock.setWidget(self._properties)
+        self._properties_dock.setFeatures(_DOCK_FEATURES)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self._properties_dock)
 
         self._create_docks()  # subclass adds its own docks
 
@@ -113,11 +125,57 @@ class BaseAudioScreen(QMainWindow):
             return act
 
         # Source actions: link by reference, or import a copy into the workspace.
-        action("Add Audio", self._add_audio_dialog, "Ctrl+O")
-        action("Add Folder", self._add_folder_dialog)
-        action("Import…", self._import_artifact_dialog)
+        self._add_menu_button(
+            toolbar,
+            "Add",
+            (
+                ("Audio file…", self._add_audio_dialog, "Ctrl+O"),
+                ("Folder of audio…", self._add_folder_dialog, None),
+                ("Import a copy into the workspace…", self._import_artifact_dialog, None),
+            ),
+        )
         self._populate_toolbar(toolbar, action)
         return toolbar
+
+    def _add_menu_button(self, toolbar: QToolBar, text: str, entries: tuple) -> list[QAction]:
+        """Add a drop-down button holding ``(text, slot, shortcut)`` entries.
+
+        Grouping related commands keeps the toolbar short enough to fit beside
+        the docks on a laptop screen. The actions are also registered on the
+        screen so their shortcuts work while the menu is closed.
+        """
+        button = QToolButton()
+        button.setText(f"{text} ▾")
+        button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        button.setStyleSheet("QToolButton::menu-indicator { image: none; }")
+        menu = QMenu(button)
+        actions = []
+        for entry_text, slot, shortcut in entries:
+            act = QAction(entry_text, self)
+            if shortcut:
+                act.setShortcut(shortcut)
+            act.triggered.connect(slot)
+            menu.addAction(act)
+            self.addAction(act)
+            actions.append(act)
+        button.setMenu(menu)
+        toolbar.addWidget(button)
+        return actions
+
+    # --- remembered view settings -----------------------------------------
+    def _restore_view_settings(self) -> None:
+        """Reapply the spectrogram look (colormap, FFT, levels) from last time."""
+        settings = app_settings()
+        settings.beginGroup(_SETTINGS_VIEW)
+        self._spectrogram.apply_view_settings({k: settings.value(k) for k in settings.childKeys()})
+        settings.endGroup()
+
+    def _save_view_settings(self) -> None:
+        settings = app_settings()
+        settings.beginGroup(_SETTINGS_VIEW)
+        for key, value in self._spectrogram.view_settings().items():
+            settings.setValue(key, value)
+        settings.endGroup()
 
     # --- subclass hooks (default no-ops) ----------------------------------
     def _create_docks(self) -> None:
@@ -150,8 +208,27 @@ class BaseAudioScreen(QMainWindow):
         self._transport.playPauseRequested.connect(self._playback.toggle)
         self._transport.stopRequested.connect(self._playback.stop)
         self._transport.seekRequested.connect(self._playback.seek)
+        self._transport.playSelectionRequested.connect(self._play_selection)
+        self._transport.speedChanged.connect(self._playback.set_speed)
+        self._transport.loopToggled.connect(self._playback.set_loop)
         self._waveform.seekRequested.connect(self._playback.seek)
+        self._spectrogram.seekRequested.connect(self._playback.seek)
+        self._spectrogram.playRangeRequested.connect(self._playback.play_range)
+        self._spectrogram.renderRequested.connect(self._render_spectrogram)
+        self._spectrogram.viewSettingsChanged.connect(self._save_view_settings)
         self._annotations.selectionChanged.connect(self._properties.set_selection)
+        self._annotations.selectionChanged.connect(
+            lambda ann: self._transport.set_selection_available(ann is not None)
+        )
+        # Transport keys work anywhere on the screen (text fields keep their own).
+        for shortcut, slot in (
+            ("Space", self._playback.toggle),
+            ("Shift+Space", self._play_selection),
+        ):
+            act = QAction(self)
+            act.setShortcut(shortcut)
+            act.triggered.connect(slot)
+            self.addAction(act)
         # Reflect in-place edits (e.g. a label change) when the selected one changes.
         self._annotations.changed.connect(
             lambda ann: (
@@ -232,9 +309,38 @@ class BaseAudioScreen(QMainWindow):
             self._waveform.clear()
             return
         self._waveform.set_audio(audio.samples, audio.sample_rate)
-        # Spectrogram of a view window is ~50 ms; safe to compute synchronously.
-        image = compute_spectrogram(audio.samples, audio.sample_rate)
-        self._spectrogram.set_image(image)
+        # Announcing the extent makes the view ask for its first window, which
+        # _render_spectrogram answers.
+        self._spectrogram.set_extent(audio.duration, audio.sample_rate / 2)
         self.statusMessage.emit(
             f"{audio.path.name}  ·  {audio.duration:.1f}s  ·  {audio.sample_rate} Hz"
         )
+
+    def _render_spectrogram(self, t0: float, t1: float, max_cols: int) -> None:
+        """Render the window the spectrogram view asked for.
+
+        A screen-width STFT is a few tens of ms whatever the recording length
+        (the column budget bounds it), so this runs synchronously.
+        """
+        audio = self._document.audio
+        if audio is None:
+            return
+        image = render_spectrogram(
+            audio.samples,
+            audio.sample_rate,
+            t0,
+            t1,
+            self._spectrogram.params(),
+            max_cols=max_cols,
+        )
+        self._spectrogram.set_image(image)
+
+    def _play_selection(self) -> None:
+        """Play the selected annotation, or the visible span if none is selected."""
+        if self._document.audio is None:
+            return
+        selected = self._annotations.selected
+        if selected is not None:
+            self._playback.play_range(selected.start_time, selected.end_time)
+        else:
+            self._playback.play_range(*self._spectrogram.visible_range())

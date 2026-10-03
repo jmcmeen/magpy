@@ -64,3 +64,15 @@ def test_remove_artifact(tmp_path):
     ws.remove_artifact(art.id)
     assert ws.artifacts == []
     assert ws.audio_files == []
+
+
+def test_linking_the_same_path_twice_reuses_the_artifact(tmp_path):
+    audio = tmp_path / "a.wav"
+    audio.write_bytes(b"\0")
+    ws = Workspace()
+    ws.create(tmp_path / "W.magpy", "W")
+
+    first = ws.link(audio)
+    again = ws.link(audio)
+    assert again.id == first.id
+    assert len(ws.artifacts) == 1

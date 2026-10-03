@@ -40,6 +40,12 @@ _TOOL_CARDS: tuple[tuple[str, str, str, ViewType], ...] = (
 )
 
 
+_CARD_WIDTH = 200
+_CARD_SPACING = 16
+_PAGE_MARGIN = 40
+_MAX_TOOL_COLUMNS = 6
+
+
 class ActionCard(QPushButton):
     """A clickable card for quick actions."""
 
@@ -51,7 +57,7 @@ class ActionCard(QPushButton):
         parent: QWidget | None = None,
     ):
         super().__init__(parent)
-        self.setFixedSize(200, 140)
+        self.setFixedSize(_CARD_WIDTH, 140)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         layout = QVBoxLayout(self)
@@ -129,11 +135,11 @@ class HomeScreen(BaseScreen):
     def _setup_ui(self):
         """Set up the home screen UI.
 
-        Keeps everything on one page: the cards stay full-size, but the tools
-        sit in a grid wide enough for two rows (instead of stacking into three),
-        the lengthy info columns are gone, and top/bottom stretches centre the
-        content so there is no lopsided dead space. A scroll area remains only as
-        a fallback for very short windows -- no scrollbar shows when it all fits.
+        Keeps everything on one page: the cards stay full-size, the tools sit in
+        a grid that reflows to the width available (see :meth:`_reflow_tools`),
+        and top/bottom stretches centre the content so there is no lopsided dead
+        space. A scroll area remains only as a fallback for very short windows --
+        no scrollbar shows when it all fits.
         """
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -143,7 +149,7 @@ class HomeScreen(BaseScreen):
         content = QWidget()
         content.setStyleSheet("background: transparent;")
         main_layout = QVBoxLayout(content)
-        main_layout.setContentsMargins(40, 24, 40, 24)
+        main_layout.setContentsMargins(_PAGE_MARGIN, 24, _PAGE_MARGIN, 24)
         main_layout.setSpacing(20)
 
         main_layout.addStretch(1)
@@ -175,20 +181,22 @@ class HomeScreen(BaseScreen):
             workspace_layout.addWidget(card)
         main_layout.addWidget(workspace_widget)
 
-        # Tool cards -- one per nav view, in a grid wide enough for two rows.
+        # Tool cards -- one per nav view, in a grid that reflows with the width.
         main_layout.addWidget(self._section_label("Tools"))
         tools_widget = QWidget()
-        tools_grid = QGridLayout(tools_widget)
-        tools_grid.setContentsMargins(0, 0, 0, 0)
-        tools_grid.setSpacing(16)
-        tools_grid.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        columns = 6
-        for index, (icon, title_text, desc, view_type) in enumerate(_TOOL_CARDS):
+        self._tools_grid = QGridLayout(tools_widget)
+        self._tools_grid.setContentsMargins(0, 0, 0, 0)
+        self._tools_grid.setSpacing(_CARD_SPACING)
+        self._tools_grid.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._tool_cards: list[ActionCard] = []
+        self._tool_columns = 0
+        for icon, title_text, desc, view_type in _TOOL_CARDS:
             card = ActionCard(icon, title_text, desc)
             card.clicked.connect(
                 lambda _checked=False, vt=view_type: self.navigate_requested.emit(vt)
             )
-            tools_grid.addWidget(card, index // columns, index % columns)
+            self._tool_cards.append(card)
+        self._reflow_tools()
         main_layout.addWidget(tools_widget)
 
         # Recent workspaces (populated by the shell; hidden when empty)
@@ -242,6 +250,23 @@ class HomeScreen(BaseScreen):
         outer_layout = QVBoxLayout(self)
         outer_layout.setContentsMargins(0, 0, 0, 0)
         outer_layout.addWidget(scroll)
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        self._reflow_tools()
+
+    def _reflow_tools(self) -> None:
+        """Lay the tool cards out in as many columns as the width allows."""
+        available = self.width() - 2 * _PAGE_MARGIN
+        columns = (available + _CARD_SPACING) // (_CARD_WIDTH + _CARD_SPACING)
+        columns = max(2, min(_MAX_TOOL_COLUMNS, columns))
+        if columns == self._tool_columns:
+            return
+        self._tool_columns = columns
+        for card in self._tool_cards:
+            self._tools_grid.removeWidget(card)
+        for index, card in enumerate(self._tool_cards):
+            self._tools_grid.addWidget(card, index // columns, index % columns)
 
     def _section_label(self, text: str) -> QLabel:
         """A centred section header used across the dashboard."""

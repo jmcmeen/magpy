@@ -75,9 +75,26 @@ from .huggingface import (
     purge_hf_cache,
     scan_hf_cache,
 )
+from .identify import DEFAULT_IDENTIFY_MODEL, Identification, identify_annotations
 from .indices import IndexRow, IndexSummary, compute_indices
-from .playback import PlaybackState, Player
-from .spectrogram import SpectrogramImage, compute_spectrogram
+from .measurements import (
+    DEFAULT_MEASUREMENTS,
+    MEASUREMENTS,
+    MEASUREMENTS_BY_KEY,
+    MeasurementSpec,
+    export_measurements_csv,
+    measure_annotations,
+)
+from .playback import SPEEDS, PlaybackState, Player
+from .spectrogram import (
+    FFT_SIZES,
+    OVERLAPS,
+    WINDOWS,
+    SpectrogramImage,
+    SpectrogramParams,
+    compute_spectrogram,
+    render_spectrogram,
+)
 from .system_info import (
     DependencyReport,
     DependencyRow,
@@ -122,12 +139,29 @@ __all__ = [
     "load_audio",
     "find_audio_files",
     "SpectrogramImage",
+    "SpectrogramParams",
+    "FFT_SIZES",
+    "OVERLAPS",
+    "WINDOWS",
     "compute_spectrogram",
+    "render_spectrogram",
     "Player",
     "PlaybackState",
+    "SPEEDS",
     "Annotation",
     "load_annotations",
     "save_annotations",
+    # per-annotation measurements (selection table columns)
+    "MeasurementSpec",
+    "MEASUREMENTS",
+    "MEASUREMENTS_BY_KEY",
+    "DEFAULT_MEASUREMENTS",
+    "measure_annotations",
+    "export_measurements_csv",
+    # model-assisted labelling (annotation screen "Identify")
+    "Identification",
+    "DEFAULT_IDENTIFY_MODEL",
+    "identify_annotations",
     # detection (reviewable candidate layer)
     "Candidate",
     "DetectorSpec",

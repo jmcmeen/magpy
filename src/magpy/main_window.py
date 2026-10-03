@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyQt6.QtCore import QSettings, QStandardPaths, Qt
+from PyQt6.QtCore import QStandardPaths, Qt
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import (
     QDockWidget,
@@ -60,6 +60,7 @@ from magpy.services import (
     is_bundle,
     load_into_environ,
 )
+from magpy.settings import app_settings
 from magpy.theme import DARK_STYLESHEET
 from magpy.widgets import NavigationBar, ViewType, WorkspacePanel
 
@@ -89,7 +90,7 @@ class MainWindow(QMainWindow):
         self.resize(1680, 1000)  # generous default; app opens maximized (see app.main)
         self.setStyleSheet(DARK_STYLESHEET)
 
-        self._settings = QSettings("MagPy", "MagPy")
+        self._settings = app_settings()
         # Load MagPy's .env into os.environ before any catalog call so saved API
         # keys take effect this session (bioamla reads them lazily).
         config_base = QStandardPaths.writableLocation(
@@ -127,7 +128,8 @@ class MainWindow(QMainWindow):
 
     def _create_workspace_dock(self) -> None:
         # Always visible: MagPy is workspace-always, so there is always one open.
-        # On the right for now (placement still being figured out).
+        # On the left beside the nav bar (files, then the work, then its
+        # properties), which leaves the right edge to the per-screen panels.
         self._workspace_panel = WorkspacePanel(self._workspace)
         self._workspace_dock = QDockWidget("Workspace", self)
         self._workspace_dock.setObjectName("WorkspaceDock")
@@ -136,7 +138,7 @@ class MainWindow(QMainWindow):
             QDockWidget.DockWidgetFeature.DockWidgetMovable
             | QDockWidget.DockWidgetFeature.DockWidgetFloatable
         )
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self._workspace_dock)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self._workspace_dock)
 
     def _create_views(self) -> None:
         # Two independent audio screens (own playback each); annotation is primary.

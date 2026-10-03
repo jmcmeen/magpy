@@ -25,14 +25,20 @@ def _build_splash() -> QSplashScreen:
     painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
     painter.setPen(QColor("#d4d4d4"))
-    painter.setFont(QFont("Sans Serif", 40, QFont.Weight.Bold))
+    title_font = QFont(painter.font())  # the platform UI font
+    title_font.setPointSize(40)
+    title_font.setWeight(QFont.Weight.Bold)
+    painter.setFont(title_font)
     painter.drawText(
         pixmap.rect().adjusted(0, 40, 0, 0),
         Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
         "MagPy",
     )
     painter.setPen(QColor("#808080"))
-    painter.setFont(QFont("Sans Serif", 12))
+    subtitle_font = QFont(painter.font())
+    subtitle_font.setPointSize(12)
+    subtitle_font.setWeight(QFont.Weight.Normal)
+    painter.setFont(subtitle_font)
     painter.drawText(
         pixmap.rect().adjusted(0, 130, 0, 0),
         Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
