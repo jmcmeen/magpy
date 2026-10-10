@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-10-10
+
 ### Added
 
 - **Draw to annotate.** Dragging on the spectrogram draws a time-frequency box that becomes an
@@ -54,3 +56,4 @@ All notable changes to this project are documented here. The format is based on
   settings go through `magpy.settings.app_settings()`, which tests redirect to a temporary
   directory.
 - Removed the `make cli` target, which ran a console script that does not exist.
+
