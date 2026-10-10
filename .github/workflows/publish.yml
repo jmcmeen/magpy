@@ -31,7 +31,13 @@ jobs:
           python-version: "3.12"
 
       - name: Build sdist + wheel
-        run: uv build
+        run: |
+          # Version from the tag this run is on, not `git describe`: when two
+          # tags share a commit, describe can pick the older one.
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            export SETUPTOOLS_SCM_PRETEND_VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          uv build
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

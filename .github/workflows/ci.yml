@@ -11,8 +11,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
-  # Only supersede PR runs: every push to main needs a finished run to release.
+  # PR runs supersede each other. Every other run gets its own group, so each
+  # push to main finishes CI and can be released.
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
