@@ -5,6 +5,12 @@ name: Release
 # The version itself comes from that tag via hatch-vcs -- nothing in the repo is
 # edited. To bump major/minor instead, push that tag by hand; the next merge
 # continues from it.
+#
+# Runs are serialized, and GitHub keeps only the newest pending one, so merges
+# that land close together can share a release. A commit that is already inside
+# the latest release is skipped, so an old run finishing late never gets a newer
+# version than the code after it. Re-running a run whose release exists only
+# re-dispatches publish.yml (which skips files already on PyPI).
 
 on:
   workflow_run:
@@ -34,16 +40,22 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0 # all tags
 
-      - name: Compute next version
+      - name: Compute version
         id: version
         run: |
-          if [ -n "$(git tag --points-at HEAD | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$')" ]; then
-            echo "$SHA is already released; nothing to do."
+          semver='^v[0-9]+\.[0-9]+\.[0-9]+$'
+          existing=$(git tag --points-at HEAD | grep -E "$semver" | head -1 || true)
+          if [ -n "$existing" ]; then
+            echo "$SHA is already $existing; retrying its release and publish."
+            echo "tag=$existing" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          latest=$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          latest=$(git tag --list 'v*' | grep -E "$semver" | sort -V | tail -1 || true)
           if [ -z "$latest" ]; then
             next=v0.1.0
+          elif git merge-base --is-ancestor HEAD "$latest"; then
+            echo "$SHA is already included in $latest; nothing to do."
+            exit 0
           else
             IFS=. read -r major minor patch <<< "${latest#v}"
             next="v$major.$minor.$((patch + 1))"
@@ -56,7 +68,9 @@ jobs:
         env:
           TAG: ${{ steps.version.outputs.tag }}
         run: |
-          gh release create "$TAG" --target "$SHA" --title "$TAG" --generate-notes
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --target "$SHA" --title "$TAG" --generate-notes
+          fi
           # A release made with GITHUB_TOKEN doesn't fire publish.yml's release
           # trigger, so start it directly on the new tag.
           gh workflow run publish.yml --ref "$TAG"
