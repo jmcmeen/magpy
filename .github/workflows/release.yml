@@ -2,19 +2,24 @@ name: Release
 
 # Cuts a release for every merge to main, once CI has passed on it: the latest
 # vX.Y.Z tag gets its patch number bumped (v0.1.0 if there are no tags yet).
-# The version itself comes from that tag via hatch-vcs -- nothing in the repo is
-# edited.
+# The version itself comes from that tag via hatch-vcs. CHANGELOG.md's
+# [Unreleased] entries move under the new version in a github-actions[bot]
+# commit on main, which is what gets tagged; they become the release notes.
+# If main has moved on by then, the entries stay put and roll into the next
+# release (GitHub's generated notes are used for this one).
 #
 # For a minor or major release, run this workflow by hand on main ("Run
 # workflow", or `gh workflow run release.yml -f bump=minor`). It releases the
 # head of main with that part bumped; the next merge continues from it. If the
 # merge was already released as a patch, the commit carries both tags.
 #
-# Runs are serialized, and GitHub keeps only the newest pending one, so merges
-# that land close together can share a release. A commit that is already inside
-# the latest release is skipped, so an old run finishing late never gets a newer
-# version than the code after it. Re-running a run whose release exists only
-# re-dispatches publish.yml (which skips files already on PyPI).
+# Releasing runs are serialized, and GitHub keeps only the newest pending one,
+# so merges that land close together can share a release. The lock is on the
+# job, so skipped runs (failed CI, dispatch off main) never take that slot.
+# A commit that is already inside the latest release is skipped, so an old run
+# finishing late never gets a newer version than the code after it. Re-running
+# a run whose release exists only re-dispatches publish.yml (which skips files
+# already on PyPI).
 
 on:
   workflow_run:
@@ -30,12 +35,8 @@ on:
         default: minor
 
 permissions:
-  contents: write # create the tag + release
+  contents: write # changelog commit, tag + release
   actions: write # dispatch publish.yml
-
-concurrency:
-  group: release
-  cancel-in-progress: false
 
 jobs:
   release:
@@ -46,9 +47,13 @@ jobs:
         && github.event.workflow_run.event == 'push')
       || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
+    concurrency:
+      group: release
+      cancel-in-progress: false
     env:
       SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
       BUMP: ${{ inputs.bump || 'patch' }}
+      ATTEMPT: ${{ github.run_attempt }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +66,17 @@ jobs:
         run: |
           semver='^v[0-9]+\.[0-9]+\.[0-9]+$'
           existing=$(git tag --points-at HEAD | grep -E "$semver" | sort -V | tail -1 || true)
-          if [ -n "$existing" ] && [ "$BUMP" = patch ]; then
+          if [ -z "$existing" ]; then
+            # The release may be on this commit's changelog commit instead.
+            for t in $(git tag --contains HEAD | grep -E "$semver" || true); do
+              if [ "$(git rev-parse "$t^{commit}^")" = "$(git rev-parse HEAD)" ] &&
+                git log -1 --format=%s "$t" | grep -q '^Update changelog for '; then
+                existing=$t
+              fi
+            done
+          fi
+          # A patch run or any re-run on a released commit retries that release.
+          if [ -n "$existing" ] && { [ "$BUMP" = patch ] || [ "$ATTEMPT" -gt 1 ]; }; then
             echo "$SHA is already $existing; retrying its release and publish."
             echo "tag=$existing" >> "$GITHUB_OUTPUT"
             exit 0
@@ -81,15 +96,49 @@ jobs:
             esac
           fi
           echo "Releasing $next ($BUMP bump; previous: ${latest:-none})"
-          echo "tag=$next" >> "$GITHUB_OUTPUT"
+          {
+            echo "tag=$next"
+            echo "new=true"
+            echo "previous=$latest"
+            echo "at_head=$existing"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Roll changelog
+        id: changelog
+        if: steps.version.outputs.new == 'true' && hashFiles('CHANGELOG.md') != ''
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          PREVIOUS: ${{ steps.version.outputs.previous }}
+          AT_HEAD: ${{ steps.version.outputs.at_head }}
+        run: |
+          notes="$RUNNER_TEMP/notes.md"
+          python3 .github/scripts/roll_changelog.py CHANGELOG.md "$TAG" "$PREVIOUS" \
+            "$(date -u +%Y-%m-%d)" "$notes" "$AT_HEAD"
+          if git diff --quiet; then
+            echo "Nothing under [Unreleased]; using generated notes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -qam "Update changelog for $TAG"
+          # Fast-forward only: if main moved past $SHA, leave the changelog alone.
+          if git push origin HEAD:refs/heads/main; then
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            echo "notes=$notes" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::main moved past $SHA; changelog entries stay under [Unreleased]."
+          fi
 
       - name: Create release
         if: steps.version.outputs.tag != ''
         env:
           TAG: ${{ steps.version.outputs.tag }}
+          TARGET: ${{ steps.changelog.outputs.sha || env.SHA }}
+          NOTES: ${{ steps.changelog.outputs.notes }}
         run: |
           if ! gh release view "$TAG" > /dev/null 2>&1; then
-            gh release create "$TAG" --target "$SHA" --title "$TAG" --generate-notes
+            if [ -n "$NOTES" ]; then notes=(--notes-file "$NOTES"); else notes=(--generate-notes); fi
+            gh release create "$TAG" --target "$TARGET" --title "$TAG" "${notes[@]}"
           fi
           # A release made with GITHUB_TOKEN doesn't fire publish.yml's release
           # trigger, so start it directly on the new tag.
