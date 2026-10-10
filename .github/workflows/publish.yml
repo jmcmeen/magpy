@@ -57,3 +57,5 @@ jobs:
 
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true # a retried release re-dispatches this
