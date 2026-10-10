@@ -44,7 +44,9 @@ def screen(qapp, tmp_path):
     qapp.processEvents()
     screen._wav = wav
     yield screen
+    # Deliver any in-flight measurement while the screen is still alive.
     QThreadPool.globalInstance().waitForDone(10000)
+    qapp.processEvents()
     screen.close()
 
 

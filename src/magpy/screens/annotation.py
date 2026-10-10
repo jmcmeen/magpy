@@ -91,6 +91,8 @@ class AudioAnnotationScreen(BaseAudioScreen):
         # Measurement cache: annotation id -> (geometry it was computed for, values).
         self._measured: dict[str, tuple[tuple, dict[str, float]]] = {}
         self._measure_worker: Worker | None = None
+        # What the running worker was given: (annotation copies, recording path).
+        self._measure_job: tuple[list[Annotation], Path] | None = None
         self._measure_timer = QTimer(self)
         self._measure_timer.setSingleShot(True)
         self._measure_timer.setInterval(_MEASURE_DEBOUNCE_MS)
@@ -488,13 +490,17 @@ class AudioAnnotationScreen(BaseAudioScreen):
             measure_annotations, audio.samples, audio.sample_rate, batch, list(self._measure_keys)
         )
         self._measure_worker = worker
-        worker.signals.result.connect(
-            lambda values, batch=batch, path=audio.path: self._on_measured(batch, values, path)
-        )
+        self._measure_job = (batch, audio.path)
+        # Bound methods, not a lambda: PyQt drops them when the screen is
+        # destroyed, so a result landing after close can't reach a dead widget.
+        worker.signals.result.connect(self._on_measured)
         worker.signals.finished.connect(self._on_measure_finished)
         QThreadPool.globalInstance().start(worker)
 
-    def _on_measured(self, batch: list[Annotation], values: dict, path: Path) -> None:
+    def _on_measured(self, values: dict) -> None:
+        if self._measure_job is None:
+            return
+        batch, path = self._measure_job
         audio = self._document.audio
         if audio is None or audio.path != path:
             return  # the recording changed while measuring
@@ -504,6 +510,7 @@ class AudioAnnotationScreen(BaseAudioScreen):
 
     def _on_measure_finished(self) -> None:
         self._measure_worker = None
+        self._measure_job = None
         if self._stale():  # edits arrived while the worker ran
             self._measure_timer.start()
 
