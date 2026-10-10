@@ -11,7 +11,10 @@ name: Release
 # For a minor or major release, run this workflow by hand on main ("Run
 # workflow", or `gh workflow run release.yml -f bump=minor`). It releases the
 # head of main with that part bumped; the next merge continues from it. If the
-# merge was already released as a patch, the commit carries both tags.
+# merge was already released as a patch, the commit carries both tags. It
+# refuses to run until CI has passed on that commit. If a release is already
+# running and a merge's release queues behind your run, GitHub cancels your
+# pending run in its favour -- Actions shows it as cancelled; run it again.
 #
 # Releasing runs are serialized, and GitHub keeps only the newest pending one,
 # so merges that land close together can share a release. The lock is on the
@@ -60,6 +63,24 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0 # all tags
+
+      - name: Require passing CI
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          # A changelog commit never runs CI (bot pushes don't trigger it), so
+          # check the commit it was made on.
+          tested=$SHA
+          if git rev-parse -q --verify HEAD^ > /dev/null &&
+            [ "$(git diff --name-only HEAD^ HEAD)" = CHANGELOG.md ] &&
+            git log -1 --format=%s HEAD | grep -q '^Update changelog for '; then
+            tested=$(git rev-parse HEAD^)
+          fi
+          passed=$(gh run list --workflow ci.yml --commit "$tested" --event push \
+            --status success --json databaseId --jq length)
+          if [ "$passed" -eq 0 ]; then
+            echo "::error::CI hasn't passed on $tested yet; wait for it, then run this again."
+            exit 1
+          fi
 
       - name: Compute version
         id: version
