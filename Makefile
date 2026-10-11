@@ -37,4 +37,4 @@ check: lint fmt-check test ## Lint, format check, then test
 
 clean: ## Remove caches and build artifacts
 	rm -rf .pytest_cache .ruff_cache dist build *.egg-info
-	find . -type d -name __pycache__ -exec rm -rf {} +
+	find . -name .venv -prune -o -type d -name __pycache__ -prune -exec rm -rf {} +
